@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pilo Gestión</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--c1:#b9e4d3;--c2:#d9cdf5;--c3:#ffd9c2;--c4:#cde6f7;--bg:#f7f5fb;--card:#fff;--tx:#2c2a3a;--mut:#7a7890;--ln:#e7e3f1;--ok:#8fd3b0;--bad:#f2a7a7;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1f1d2b;--card:#2a2739;--tx:#ece9f7;--mut:#a5a2ba;--ln:#3a3650}}
+:root[data-theme="dark"]{--bg:#1f1d2b;--card:#2a2739;--tx:#ece9f7;--mut:#a5a2ba;--ln:#3a3650}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:400 15px/1.45 Figtree,system-ui,sans-serif}
+h1,h2,h3{font-family:'Bricolage Grotesque',Figtree,system-ui,sans-serif;margin:0;font-weight:700}
+.app{display:grid;grid-template-columns:200px 1fr;min-height:100vh}
+nav{background:var(--card);border-right:1px solid var(--ln);padding:20px 14px;display:flex;flex-direction:column;gap:6px}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.logo{width:38px;height:38px;border-radius:12px;background:var(--c2);display:grid;place-items:center;font:700 18px 'Bricolage Grotesque',sans-serif;color:var(--tx)}
+nav button{all:unset;cursor:pointer;padding:11px 13px;border-radius:12px;font-weight:500;color:var(--mut)}
+nav button:hover{background:var(--bg)}nav button.on{background:var(--c1);color:#22332c}
+nav button:focus-visible,.btn:focus-visible{outline:2px solid var(--tx);outline-offset:2px}
+.who{margin-top:auto;font-size:13px;color:var(--mut);border-top:1px solid var(--ln);padding-top:12px}
+main{padding:24px;min-width:0}.tab{display:none}.tab.on{display:block}
+.top{display:flex;justify-content:space-between;align-items:end;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+.top p{margin:2px 0 0;color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:18px;padding:18px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.kpi{border-radius:18px;padding:16px;color:#2c2a3a}.kpi small{opacity:.75}.kpi b{display:block;font:700 26px 'Bricolage Grotesque',sans-serif}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.dh{font-size:12px;color:var(--mut);text-align:center;padding:4px}
+.day{all:unset;cursor:pointer;min-height:74px;border-radius:12px;border:1px solid var(--ln);padding:6px 8px;display:flex;flex-direction:column;justify-content:space-between}
+.day:hover{border-color:var(--c2)}.day.sel{background:var(--c2);color:#2c2a3a}.day.hoy{outline:2px solid var(--c3)}.day.emp{border:none;cursor:default}
+.day span{font-size:12px;color:var(--mut)}.day.sel span{color:#4a4560}.day b{font-size:13px}.day .neg{color:#c26a6a;font-size:11px;font-weight:500}
+.split{display:grid;grid-template-columns:1fr 280px;gap:14px}
+.pay{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--ln)}.pay:last-child{border:none}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
+.mesas{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
+.mesa{all:unset;cursor:pointer;text-align:center;padding:10px 4px;border-radius:14px;background:var(--c1);color:#22332c;font-weight:600;font-size:13px}
+.mesa small{display:block;font-weight:400}.mesa.oc{background:var(--c3);color:#4a3020}.mesa.sel{outline:3px solid var(--tx)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.chip{all:unset;cursor:pointer;padding:7px 13px;border-radius:99px;background:var(--bg);border:1px solid var(--ln);font-size:13px}.chip.on{background:var(--c2);color:#2c2a3a;border-color:var(--c2)}
+.prods{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.prod{all:unset;cursor:pointer;padding:13px 12px;border-radius:14px;background:var(--c4);color:#22323f;font-weight:600;min-height:64px}
+.prod small{display:block;font-weight:400;margin-top:2px}.prod:active{transform:scale(.97)}
+.tk{display:flex;flex-direction:column;gap:8px}.it{display:flex;justify-content:space-between;font-size:14px;gap:8px}
+.tot{display:flex;justify-content:space-between;font:700 22px 'Bricolage Grotesque',sans-serif;border-top:2px solid var(--ln);padding-top:10px;margin-top:4px}
+.pays{display:grid;grid-template-columns:1fr 1fr;gap:6px}.btn{all:unset;cursor:pointer;text-align:center;padding:10px;border-radius:12px;background:var(--c1);color:#22332c;font-weight:600;font-size:13px}
+.btn.s{background:var(--bg);border:1px solid var(--ln);color:var(--tx)}
+.bars{display:flex;align-items:end;gap:10px;height:150px;padding-top:10px}.bar{flex:1;border-radius:10px 10px 4px 4px;background:var(--c2);display:flex;justify-content:center;font-size:11px;color:#2c2a3a;padding-top:4px}
+.bl{display:flex;gap:10px;font-size:12px;color:var(--mut)}.bl div{flex:1;text-align:center}
+.pb{height:12px;border-radius:99px;background:var(--bg);overflow:hidden;margin:4px 0 10px}.pb i{display:block;height:100%}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cfg{display:grid;grid-template-columns:1fr 1fr;gap:14px}.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed var(--ln)}
+input[type=text]{border:1px solid var(--ln);background:var(--bg);color:var(--tx);border-radius:10px;padding:8px 10px;font:inherit;width:170px}
+input[type=color]{width:44px;height:32px;border:none;background:none;padding:0;cursor:pointer}
+@media (max-width:860px){.app{grid-template-columns:1fr}nav{flex-direction:row;overflow-x:auto;border-right:none;border-bottom:1px solid var(--ln)}.brand,.who{display:none}.split,.g2,.cfg{grid-template-columns:1fr}.mesas{grid-template-columns:repeat(5,1fr)}main{padding:14px}.day{min-height:56px}}
+nav button[data-a]{display:none}body.adm nav button[data-a]{display:block}.mesas{grid-template-columns:repeat(auto-fill,minmax(88px,1fr))}
+dialog{border:1px solid var(--ln);border-radius:18px;background:var(--card);color:var(--tx);padding:20px;min-width:320px}dialog::backdrop{background:#2c2a3a66}
+dialog label{display:block;margin:10px 0;font-size:13px;color:var(--mut)}dialog input,dialog select{display:block;width:100%;margin-top:4px;border:1px solid var(--ln);background:var(--bg);color:var(--tx);border-radius:10px;padding:9px;font:inherit}
+.acts{display:flex;flex-direction:row-reverse;gap:8px;margin-top:14px}.acts button{all:unset;cursor:pointer;padding:10px 16px;border-radius:12px;font-weight:600;background:var(--bg);border:1px solid var(--ln)}.acts button[value=ok]{background:var(--c1);color:#22332c;border-color:var(--c1)}
+.it{cursor:pointer}.pl{cursor:pointer}.pl:hover{background:var(--bg)}.small{font-size:12px;color:var(--mut)}
+.adm-only{display:none}body.adm .adm-only{display:block}</style></head><body>
+<div class="app"><nav>
+<div class="brand"><div class="logo" id="lg">P</div><h3 id="nm">Pilo</h3></div>
+<button class="on" data-t="ventas">Ventas</button><button data-t="viandas">Viandas</button><button data-t="inicio" data-a>Inicio</button><button data-t="caja" data-a>Caja y gastos</button><button data-t="stock" data-a>Stock y recetas</button><button data-t="stats" data-a>Estadísticas</button><button data-t="cfg" data-a>Configuración</button>
+<div class="who"><span id="ses">Sesión: empleado</span><span class="btn s" id="lgn" role="button" tabindex="0" style="display:block;margin-top:8px">Entrar como administrador</span></div></nav>
+<main>
+<section class="tab on" id="ventas"><div class="top"><div><h1>Ventas</h1><p>Elegí una mesa o vendé en mostrador</p></div></div>
+<div class="split"><div class="card"><div class="mesas" id="mesas"></div><div class="chips" id="cats"></div><div class="prods" id="prods"></div></div>
+<div class="card tk"><h3 id="tt">Mostrador</h3><div class="chips" id="tipos"></div><div id="items" class="tk"></div>
+<div class="small" id="dsc"></div><div class="tot"><span>Total</span><span id="tot">$ 0</span></div>
+<div class="pays"><button class="btn" data-m="Efectivo">Efectivo</button><button class="btn" data-m="Transferencia">Transferencia</button><button class="btn" data-m="QR">QR</button><button class="btn" data-m="Tarjeta">Tarjeta</button></div>
+<div class="pays"><button class="btn s" id="bdes">Descuento</button><button class="btn s" id="bfia">Fiar</button><button class="btn s" id="bdiv">Dividir pago</button><button class="btn s" id="bvac">Vaciar</button></div>
+<div class="small">Tocá un renglón para quitar una unidad</div></div></div></section>
+<section class="tab" id="inicio"><div class="top"><div><h1 id="mt"></h1><p>Tocá un día para ver el detalle</p></div><div><button class="btn s" id="bxl" style="display:inline-block;width:auto;padding:10px 14px">Exportar Excel</button> <button class="btn s" id="bpd" style="display:inline-block;width:auto;padding:10px 14px">Exportar PDF</button> <button class="btn s" id="pv" style="display:inline-block;width:40px">‹</button> <button class="btn s" id="nx" style="display:inline-block;width:40px">›</button></div></div>
+<div class="kpis"><div class="kpi" style="background:var(--c1)"><small>Ingresos del mes</small><b id="k1"></b></div><div class="kpi" style="background:var(--c3)"><small>Egresos del mes</small><b id="k2"></b></div><div class="kpi" style="background:var(--c2)"><small>Ganancia del mes</small><b id="k3"></b></div></div>
+<div class="split"><div class="card"><div class="cal" id="cal"></div></div><div class="card" id="det"></div></div></section>
+<section class="tab" id="caja"><div class="top"><div><h1>Caja y gastos</h1><p id="hoyt"></p></div></div><div class="g2"><div class="card" id="cj"></div><div class="card"><h3>Gastos y compras</h3><div id="gl"></div><button class="btn" id="bgas" style="margin-top:12px">Registrar gasto</button></div></div>
+<div class="card" style="margin-top:14px"><h3>Fiados pendientes</h3><div id="dl"></div></div></section>
+<section class="tab" id="stats"><div class="top"><div><h1>Estadísticas</h1><p>Solo visible para el administrador</p></div></div>
+<div class="kpis"><div class="kpi" style="background:var(--c1)"><small>Ventas de hoy</small><b id="s1"></b></div><div class="kpi" style="background:var(--c4)"><small>Ganancia semanal (7 días)</small><b id="s2"></b></div><div class="kpi" style="background:var(--c2)"><small>Ganancia mensual</small><b id="s3"></b></div></div>
+<div class="g2"><div class="card"><h3>Promedio por día de la semana</h3><div class="bars" id="bars"></div><div class="bl" id="bl"></div></div><div class="card"><h3>Ingresos del mes por medio de pago</h3><div id="pm" style="margin-top:12px"></div></div></div></section>
+<section class="tab" id="cfg"><div class="top"><div><h1>Configuración</h1><p>Los cambios se ven al instante</p></div></div><div class="cfg">
+<div class="card"><h3>Tu negocio</h3><div class="row"><span>Nombre</span><input type="text" id="inn"></div><div class="row"><span>Tema</span><span><button class="btn s" data-th="light" style="display:inline-block">Claro</button> <button class="btn s" data-th="dark" style="display:inline-block">Oscuro</button></span></div>
+<div class="row"><span>Backup de datos</span><span><button class="btn s" id="bdl" style="display:inline-block;width:auto;padding:8px 12px">Descargar</button> <label class="btn s" style="display:inline-block;width:auto;padding:8px 12px">Restaurar<input type="file" id="brs" accept=".json" hidden></label></span></div><div class="row"><span>Clave de administrador</span><button class="btn s" id="bpw" style="display:inline-block">Cambiar</button></div></div>
+<div class="card"><h3>Colores</h3><div class="row"><span>Menta</span><input type="color" data-v="c1"></div><div class="row"><span>Lavanda</span><input type="color" data-v="c2"></div><div class="row"><span>Durazno</span><input type="color" data-v="c3"></div><div class="row"><span>Celeste</span><input type="color" data-v="c4"></div></div>
+<div class="card" style="grid-column:1/-1"><div class="top" style="margin:0"><h3>Productos</h3><button class="btn" id="bnp" style="display:inline-block;width:auto;padding:10px 16px">Nuevo producto</button></div><div id="pl"></div></div></div></section>
+<section class="tab" id="viandas"><div class="top"><div><h1>Viandas</h1><p>Pedidos fijos de hoy</p></div></div><div class="card"><h3>Para entregar hoy</h3><div id="vh"></div></div>
+<div class="card adm-only" style="margin-top:14px"><div class="top" style="margin:0"><h3>Pedidos fijos</h3><button class="btn" id="bnv" style="display:inline-block;width:auto;padding:10px 16px">Nueva vianda</button></div><div id="va"></div></div></section>
+<section class="tab" id="stock"><div class="top"><div><h1>Stock y recetas</h1><p>El stock baja solo con cada venta que tenga receta</p></div></div><div class="g2">
+<div class="card"><div class="top" style="margin:0"><h3>Insumos</h3><span><button class="btn s" id="bni" style="display:inline-block;width:auto;padding:8px 12px">Nuevo</button> <button class="btn" id="bci" style="display:inline-block;width:auto;padding:8px 12px">Registrar compra</button></span></div><div id="il"></div></div>
+<div class="card"><h3>Recetas y márgenes</h3><p class="small">Tocá un producto para cargar su receta</p><div id="rl"></div></div></div></section>
+</main></div>
+<dialog id="dlg"><form method="dialog"><h3 id="dt"></h3><div id="df"></div><div class="acts"><button value="ok" id="dok">Aceptar</button><button value="cancel">Cancelar</button></div></form></dialog>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="src/store.js"></script>
+<script src="src/export.js"></script>
+<script src="src/pilo-web.js"></script>
+<script src="src/app.js"></script></body></html>

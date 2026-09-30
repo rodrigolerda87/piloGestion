@@ -1,0 +1,1 @@
+{ "name": "pilo-gestion-web", "version": "0.2.0", "private": true, "scripts": { "test": "node test/test.js && node test/smoke.js" }, "devDependencies": { "jsdom": "^24.1.0", "xlsx": "0.18.5" } }
