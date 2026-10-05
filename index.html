@@ -72,7 +72,7 @@ dialog label{display:block;margin:10px 0;font-size:13px;color:var(--mut)}dialog 
 :root[data-theme="dark"]{--bg:#17151f;--card:#232030;--tx:#f1eefb;--mut:#a29fb8;--ln:#322e44}
 body{font:600 14px/1.4 Nunito,system-ui,sans-serif}h1,h2,h3,.kpi b,.tot{font-family:'Baloo 2',Nunito,system-ui,sans-serif}h1,h2,h3{font-weight:800}
 .wrap{max-width:1180px;margin:0 auto;padding:16px 20px 40px}main{padding:0}
-.bar{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}.bar .sp{flex:1}
+.hdr{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}.hdr .sp{flex:1}
 .logo{width:40px;height:40px;border-radius:13px;background:linear-gradient(135deg,#2f6bff,#1a4fd6);display:grid;place-items:center;font-size:20px;box-shadow:0 6px 14px -6px #2f6bff;color:#fff}
 .bnd small{display:block;color:var(--mut);font-size:11px;font-weight:600;margin-top:-4px}
 .pill{border:0;cursor:pointer;font:800 13px 'Baloo 2',sans-serif;color:#fff;background:linear-gradient(135deg,#e0307a,#f0508f);padding:9px 18px;border-radius:99px;box-shadow:0 8px 16px -8px #e0307a;transition:.2s}.pill:hover{transform:translateY(-2px)}
@@ -105,10 +105,12 @@ body{font:600 14px/1.4 Nunito,system-ui,sans-serif}h1,h2,h3,.kpi b,.tot{font-fam
 .tab.on{animation:up .35s both}@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (max-width:900px){.tiles{grid-template-columns:repeat(2,1fr)}.tile.big{grid-column:span 2;grid-row:span 1;min-height:170px}.g3{grid-template-columns:1fr}.usr>div:last-child{display:none}.greet h1{font-size:24px}.wrap{padding:12px}}
+.bnd small{max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.logo{overflow:hidden}.logo img{width:100%;height:100%;object-fit:cover;display:block}
+.pill[data-a]{display:none}body.adm .pill[data-a]{display:inline-block}
 </style></head><body>
 <div class="wrap">
-<header class="bar"><div class="logo" id="lg">☕</div><div class="bnd"><h3 id="nm">Pilo</h3><small>Cafetería y comidas</small></div><button class="back" id="back" style="display:none">← Inicio</button><div class="sp"></div>
-<button class="pill" data-t="ventas">＋ Vender</button><button class="ic" id="tema" type="button" aria-label="Cambiar entre modo claro y oscuro"><span id="tl">🌙</span></button>
+<header class="hdr"><div class="logo" id="lg">☕</div><div class="bnd"><h3 id="nm">Pilo</h3><small id="nsub">Cafetería y comidas</small></div><button class="back" id="back" style="display:none">← Inicio</button><div class="sp"></div>
+<button class="pill" id="bneg" data-a type="button">🏪 Mi Negocio</button><button class="ic" id="tema" type="button" aria-label="Cambiar entre modo claro y oscuro"><span id="tl">🌙</span></button>
 <div class="usr"><div class="av" id="av">U</div><div><div id="ses">Empleado</div><small><span id="lgn" role="button" tabindex="0">Entrar como administrador</span></small></div></div></header>
 <main>
 <section class="tab on" id="home">
@@ -145,7 +147,7 @@ body{font:600 14px/1.4 Nunito,system-ui,sans-serif}h1,h2,h3,.kpi b,.tot{font-fam
 <div class="kpis"><div class="kpi" style="background:var(--c1)"><small>Ventas de hoy</small><b id="s1"></b></div><div class="kpi" style="background:var(--c4)"><small>Ganancia semanal (7 días)</small><b id="s2"></b></div><div class="kpi" style="background:var(--c2)"><small>Ganancia mensual</small><b id="s3"></b></div></div>
 <div class="g2"><div class="card"><h3>Promedio por día de la semana</h3><div class="bars" id="bars"></div><div class="bl" id="bl"></div></div><div class="card"><h3>Ingresos del mes por medio de pago</h3><div id="pm" style="margin-top:12px"></div></div></div></section>
 <section class="tab" id="cfg"><div class="top"><div><h1>Configuración</h1><p>Los cambios se ven al instante</p></div></div><div class="cfg">
-<div class="card"><h3>Tu negocio</h3><div class="row"><span>Nombre del negocio</span><input type="text" id="inn"></div><div class="row"><span>Tu nombre (para el saludo)</span><input type="text" id="inu"></div>
+<div class="card"><h3>Tu negocio</h3><div class="row"><span>Tu nombre (para el saludo)</span><input type="text" id="inu"></div>
 <div class="row"><span>Backup de datos</span><span><button class="btn s" id="bdl" style="display:inline-block;width:auto;padding:8px 12px">Descargar</button> <label class="btn s" style="display:inline-block;width:auto;padding:8px 12px">Restaurar<input type="file" id="brs" accept=".json" hidden></label></span></div><div class="row"><span>Clave de administrador</span><button class="btn s" id="bpw" style="display:inline-block">Cambiar</button></div></div>
 <div class="card"><h3>Colores</h3><div class="row"><span>Menta</span><input type="color" data-v="c1"></div><div class="row"><span>Lavanda</span><input type="color" data-v="c2"></div><div class="row"><span>Durazno</span><input type="color" data-v="c3"></div><div class="row"><span>Celeste</span><input type="color" data-v="c4"></div></div>
 <div class="card" style="grid-column:1/-1"><div class="top" style="margin:0"><h3>Productos</h3><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn s" id="bpc" style="display:inline-block;width:auto;padding:10px 14px">Aumentar precios %</button><button class="btn s" id="bnpv" style="display:inline-block;width:auto;padding:10px 14px">Nueva vianda</button><button class="btn" id="bnp" style="display:inline-block;width:auto;padding:10px 14px">Nuevo producto</button></span></div><div id="pl"></div></div></div></section>
@@ -160,6 +162,11 @@ body{font:600 14px/1.4 Nunito,system-ui,sans-serif}h1,h2,h3,.kpi b,.tot{font-fam
 <div class="kpis" id="dk"></div><div class="split"><div class="card"><h3>Ventas del día</h3><div id="dv"></div></div><div class="card"><h3>Estadísticas del día</h3><div id="ds"></div></div></div>
 <div class="card" style="margin-top:14px"><h3>Gastos del día</h3><div id="dg"></div></div></section>
 </main></div>
+<dialog id="dneg"><form method="dialog"><h3>Mi Negocio</h3>
+<div style="display:flex;gap:14px;align-items:center;margin:12px 0"><div class="logo" id="nlogo" style="width:64px;height:64px;border-radius:18px;font-size:30px;flex:none">☕</div>
+<div><label class="btn s" style="display:inline-block;width:auto;padding:8px 12px;cursor:pointer;margin:0">Subir logo<input type="file" id="nfile" accept="image/*" style="display:none"></label> <button type="button" class="btn s" id="nquit" style="display:inline-block;width:auto;padding:8px 12px">Quitar</button><p class="small" style="margin:6px 0 0">Se achica solo. Queda mejor si es cuadrado.</p></div></div>
+<label>Nombre del negocio<input type="text" id="nn"></label><label>Dirección<input type="text" id="nd"></label><label>Teléfono<input type="text" id="nt"></label>
+<div class="acts"><button value="ok" id="nok">Guardar</button><button value="cancel">Cancelar</button></div></form></dialog>
 <dialog id="dpr"><form method="dialog"><h3>Aumentar o bajar precios</h3>
 <label>Porcentaje (%) — usá un número negativo para bajar<input type="number" id="pp" value="10" step="0.1"></label>
 <label>Redondear los precios a<select id="pr"><option value="1">Sin redondeo</option><option value="10" selected>Múltiplos de $10</option><option value="50">Múltiplos de $50</option><option value="100">Múltiplos de $100</option></select></label>
@@ -168,7 +175,7 @@ body{font:600 14px/1.4 Nunito,system-ui,sans-serif}h1,h2,h3,.kpi b,.tot{font-fam
 <div class="acts"><button value="ok" id="pok">Aplicar</button><button value="cancel">Cancelar</button></div></form></dialog>
 <dialog id="dlg"><form method="dialog"><h3 id="dt"></h3><div id="df"></div><div class="acts"><button value="ok" id="dok">Aceptar</button><button value="cancel">Cancelar</button></div></form></dialog>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="src/store.js?v=4"></script>
-<script src="src/export.js?v=4"></script>
-<script src="src/pilo-web.js?v=4"></script>
-<script src="src/app.js?v=4"></script></body></html>
+<script src="src/store.js?v=5"></script>
+<script src="src/export.js?v=5"></script>
+<script src="src/pilo-web.js?v=5"></script>
+<script src="src/app.js?v=5"></script></body></html>
