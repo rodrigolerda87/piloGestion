@@ -35,6 +35,7 @@ const memoria = () => { let v = null; return { load: async () => v, save: async 
   db.eliminarProducto(pv); assert(!P(pv), 'producto eliminado'); assert.strictEqual(db.dia(hoy()).ventas.some(v => v.items.some(i => i.nombre.includes('Vianda'))), true, 'las ventas viejas se conservan');
   const dd = db.dia(hoy()); assert(dd.ventas.length >= 4 && dd.top.length > 0 && dd.ingresos > 0 && dd.ventas[0].items.length, 'detalle del día'); assert.strictEqual(db.dia('2000-01-01').ventas.length, 0);
   const rep = db.reporte(hoy().slice(0, 7)); assert.strictEqual(XLSX.read(excel(rep)).SheetNames.length, 4); assert(html(rep).includes('Informe'));
+  db.setConfig('direccion', 'San Martín 123'); db.setConfig('telefono', '3462 555555'); db.setConfig('logo', 'data:image/png;base64,AAAA'); const r2 = db.reporte(hoy().slice(0, 7)); assert(html(r2).includes('San Martín 123') && html(r2).includes('3462 555555') && html(r2).includes('data:image/png'), 'PDF con datos del negocio');
   assert(await db.login('admin')); await db.cambiarClave('nueva'); assert(await db.login('nueva') && !(await db.login('admin')), 'cambio de clave');
   assert(!db.backupVencido(), 'backup al día'); const copia = db.dump();
   await db.flush(); const db2 = await PiloStore.crear(st); assert.strictEqual(db2.productos().length, 25, 'persistencia');

@@ -11,6 +11,7 @@ const { JSDOM } = require('jsdom'), assert = require('assert'), path = require('
   const nav = async t => { $(`[data-t=${t}]`).click(); await sleep(150); };
   await sleep(800);
   await nav('ventas'); assert(d.querySelectorAll('.prod').length > 0, 'productos en pantalla'); assert.strictEqual($('#back').style.display, '', 'botón volver visible'); $('#back').click(); await sleep(200); assert($('#home').classList.contains('on'));
+  { const hd = $('header'), bg = w.getComputedStyle(hd).backgroundColor, jc = w.getComputedStyle(hd).justifyContent; assert(['', 'transparent', 'rgba(0, 0, 0, 0)'].includes(bg) && jc !== 'center', 'el encabezado no hereda los estilos de las barras del gráfico (' + bg + '/' + jc + ')'); assert.strictEqual(w.getComputedStyle($('#bneg')).display, 'none', 'Mi Negocio oculto para el empleado'); }
   assert(/Buen/.test($('#hsal').textContent), 'saludo'); assert($('#hk').textContent.includes('Efectivo en caja') && !$('#hk').textContent.includes('Ganancia'), 'inicio del empleado: sin ganancias'); assert.strictEqual($('#hvend').style.display, 'none');
   assert(!$('.tile[data-t=caja]').hasAttribute('data-a'), 'Caja y gastos visible para el empleado'); assert($('.tile[data-t=stats]').hasAttribute('data-a'), 'Estadísticas solo admin'); assert.strictEqual(w.getComputedStyle($('.tile[data-t=stats]')).display, 'none', 'mosaico de administrador oculto para el empleado'); 
   // modo oscuro / claro
@@ -35,7 +36,9 @@ const { JSDOM } = require('jsdom'), assert = require('assert'), path = require('
   w.__fill = x => fill(x, { 1: '0', 4: 'Efectivo' }); $('#vh [data-ed]').click(); await sleep(250); assert.match($('#vh').textContent, /A retirar/); assert.match($('#vh').textContent, /7\.000/, 'modificar a retiro en efectivo de la otra vianda'); assert($('#ve').textContent.includes('Pedro'));
   // admin: todas las pestañas y detalle del día
   w.__fill = x => fill(x, { 0: 'admin' }); $('#lgn').click(); await sleep(700); assert(d.body.classList.contains('adm'), 'login de administrador'); assert($('#hk').textContent.includes('Ganancia del mes') && $('#hvend').style.display !== 'none', 'inicio del administrador con ganancias'); assert.notStrictEqual(w.getComputedStyle($('.tile[data-t=stats]')).display, 'none');
-  assert($('.sq'), 'iconos de color en los títulos');
+  assert($('.sq'), 'iconos de color en los títulos'); assert.notStrictEqual(w.getComputedStyle($('#bneg')).display, 'none', 'Mi Negocio visible para el administrador'); assert(!$('#inn'), 'el nombre ya no está duplicado en Configuración');
+  await w.pilo.setConfig('logo', 'data:image/png;base64,iVBORw0KGgo='); w.__fill = x => { x.querySelector('#nn').value = 'Café Uri'; x.querySelector('#nd').value = 'San Martín 123'; x.querySelector('#nt').value = '3462 555555'; }; $('#bneg').click(); await sleep(300);
+  assert.strictEqual($('#nm').textContent, 'Café Uri', 'nombre del negocio'); assert($('#nsub').textContent.includes('San Martín 123') && $('#nsub').textContent.includes('3462 555555'), 'dirección y teléfono'); assert($('#lg img'), 'logo en el encabezado'); assert.strictEqual((await w.pilo.config()).direccion, 'San Martín 123', 'guardado');
   // productos: eliminar y aumentar precios
   await nav('cfg'); const n0 = (await w.pilo.productos()).length, med0 = (await w.pilo.productos()).find(x => x.nombre === 'Medialuna').precio, fact0 = (await w.pilo.productos()).find(x => x.nombre === 'Factura').precio;
   w.__fill = x => { x.querySelector('#pp').value = '10'; [...x.querySelectorAll('.pk')].filter(c => c.parentElement.textContent.includes('Medialuna')).forEach(c => { c.checked = true; }); }; $('#bpc').click(); await sleep(300);
