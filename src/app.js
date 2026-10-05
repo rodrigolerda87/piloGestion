@@ -60,13 +60,13 @@ async function rS(){const s=await pilo.stats();$('#s1').textContent=fm(s.hoy);$(
 $('#bars').innerHTML=s.porDia.map(v=>`<div class="bar" style="height:${Math.max(v/mx*100,3)}%">${v?Math.round(v/1000)+'k':''}</div>`).join('');$('#bl').innerHTML=['L','M','M','J','V','S','D'].map(x=>`<div>${x}</div>`).join('');
 const tt=MEDIOS.reduce((a,m)=>a+(s.medios[m]||0),0)||1;$('#pm').innerHTML=MEDIOS.map(m=>{const v=s.medios[m]||0;return`<div style="display:flex;justify-content:space-between"><span>${m}</span><b>${fm(v)} · ${Math.round(v/tt*100)}%</b></div><div class="pb"><i style="width:${v/tt*100}%;background:${COL[m]}"></i></div>`}).join('')}
 // ---- Configuración
-const aplicar=c=>{['c1','c2','c3','c4'].forEach(k=>c[k]&&R.style.setProperty('--'+k,c[k]));$('#nm').textContent=c.nombre||'Negocio';$('#av').textContent=(c.usuario||'U')[0].toUpperCase();document.title=(c.nombre||'')+' · Gestión'};
-async function rG(){const c=await pilo.config();$('#inn').value=c.nombre||'';$('#inu').value=c.usuario||'';$$('input[type=color]').forEach(i=>i.value=c[i.dataset.v]);
+const aplicar=c=>{['c1','c2','c3','c4'].forEach(k=>c[k]&&R.style.setProperty('--'+k,c[k]));$('#nm').textContent=c.nombre||'Negocio';pintaLogo($('#lg'),c.logo);$('#nsub').textContent=[c.direccion,c.telefono].filter(Boolean).join(' · ')||'Cafetería y comidas';$('#av').textContent=(c.usuario||'U')[0].toUpperCase();document.title=(c.nombre||'')+' · Gestión'};
+async function rG(){const c=await pilo.config();$('#inu').value=c.usuario||'';$$('input[type=color]').forEach(i=>i.value=c[i.dataset.v]);
 const p=await pilo.productos();$('#pl').innerHTML=p.map(x=>`<div class="row pl" data-i="${x.id}" style="align-items:flex-start"><span>${esc(x.categoria)} · ${esc(x.nombre)}</span><span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end">${precioTxt(x)}<button class="btn s" data-x="${x.id}" style="width:auto;padding:6px 10px">Eliminar</button></span></div>`).join('');
 $$('#pl .pl').forEach(e=>e.onclick=()=>editProd(p.find(q=>q.id==e.dataset.i)));
 $$('#pl [data-x]').forEach(b=>b.onclick=async ev=>{ev.stopPropagation();const x=p.find(q=>q.id==b.dataset.x);if(!confirm(`¿Eliminar "${x.nombre}"? Las ventas ya registradas no se modifican.`))return;await pilo.eliminarProducto(x.id);rG()})}
 $('#bnp').onclick=async()=>{const r=await ask('Nuevo producto',[{l:'Categoría'},{l:'Nombre'},{l:'Precio ($)',t:'number'},{l:'Costo ($, opcional)',t:'number'}],'Crear');if(r&&r[0]&&r[1]&&+r[2]>0){await pilo.guardarProducto({categoria:r[0],nombre:r[1],precio:+r[2],costo:+r[3]||0});rG()}};
-$('#inu').onchange=async e=>{await pilo.setConfig('usuario',e.target.value.trim());aplicar(await pilo.config())};$('#inn').onchange=async e=>{await pilo.setConfig('nombre',e.target.value);aplicar(await pilo.config())};$('#bdl').onclick=async()=>{try{await pilo.exportarBackup()}catch(e){err(e)}};
+$('#inu').onchange=async e=>{await pilo.setConfig('usuario',e.target.value.trim());aplicar(await pilo.config())};$('#bdl').onclick=async()=>{try{await pilo.exportarBackup()}catch(e){err(e)}};
 $('#brs').onchange=async e=>{const f=e.target.files[0];if(!f)return;if(!confirm('Esto reemplaza TODOS los datos actuales por los del backup. ¿Continuar?'))return;try{await pilo.importarBackup(await f.text());alert('Backup restaurado');location.reload()}catch(x){err(x)}};
 $$('input[type=color]').forEach(i=>i.oninput=async()=>{R.style.setProperty('--'+i.dataset.v,i.value);pilo.setConfig(i.dataset.v,i.value)});
 $$('[data-th]').forEach(b=>b.onclick=()=>{R.dataset.theme=b.dataset.th;try{localStorage.setItem('tema',b.dataset.th)}catch{}});
@@ -152,6 +152,17 @@ const r=await ask('Receta de '+x.nombre,f,'Guardar');if(!r)return;const l=[];for
 $('#bni').onclick=()=>editIns();
 $('#bci').onclick=async()=>{const ins=await pilo.insumos();if(!ins.length)return alert('Primero cargá un insumo');const r=await ask('Registrar compra',[{l:'Insumo',opts:ins.map(i=>[i.id,`${i.nombre} (${i.unidad})`])},{l:'Cantidad comprada',t:'number'},{l:'Total pagado ($)',t:'number'},{l:'Medio de pago',opts:MEDIOS.map(m=>[m,m])}],'Registrar');
 if(r&&+r[1]>0){try{await pilo.comprarInsumo({insumo_id:+r[0],cantidad:+r[1],monto:+r[2]||0,medio:r[3]});rSt()}catch(e){err(e)}}};
+// ---- Mi Negocio (solo administrador): nombre, logo, dirección y teléfono
+let logoTmp='';
+function pintaLogo(el,src){if(src){el.style.background='none';el.innerHTML=`<img src="${src}" alt="">`}else{el.style.background='';el.textContent='☕'}}
+async function miNegocio(){const c=await pilo.config(),d=$('#dneg');logoTmp=c.logo||'';$('#nn').value=c.nombre||'';$('#nd').value=c.direccion||'';$('#nt').value=c.telefono||'';pintaLogo($('#nlogo'),logoTmp);
+d.onclose=async()=>{if(d.returnValue!=='ok')return;const n=$('#nn').value.trim();if(!n)return alert('El nombre del negocio no puede quedar vacío');
+await pilo.setConfig('nombre',n);await pilo.setConfig('direccion',$('#nd').value.trim());await pilo.setConfig('telefono',$('#nt').value.trim());await pilo.setConfig('logo',logoTmp);aplicar(await pilo.config())};d.showModal()}
+$('#bneg').onclick=miNegocio;$('#nok').onclick=e=>{if(!$('#nn').value.trim()){e.preventDefault();alert('El nombre del negocio no puede quedar vacío')}};
+$('#nquit').onclick=()=>{logoTmp='';pintaLogo($('#nlogo'),'')};
+$('#nfile').onchange=e=>{const f=e.target.files[0];e.target.value='';if(!f)return;if(!f.type.startsWith('image/'))return alert('Elegí un archivo de imagen');const img=new Image(),u=URL.createObjectURL(f);
+img.onload=()=>{const k=Math.min(1,256/Math.max(img.width,img.height)),cv=document.createElement('canvas');cv.width=Math.max(1,Math.round(img.width*k));cv.height=Math.max(1,Math.round(img.height*k));cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);logoTmp=cv.toDataURL('image/png');URL.revokeObjectURL(u);pintaLogo($('#nlogo'),logoTmp)};
+img.onerror=()=>{URL.revokeObjectURL(u);alert('No se pudo leer esa imagen')};img.src=u};
 // ---- Inicio: mosaicos de colores y resumen del día
 const META={ventas:['🛎️','#d9327a','#f0508f'],viandas:['🍱','#e0561f','#c4410e'],clientes:['👥','#1e90d6','#1676b6'],caja:['💵','#e6a22d','#d38a12'],inicio:['📅','#7b4df5','#6238d8'],stats:['📊','#0f9d9a','#0b7f7c'],stock:['📦','#1f9255','#177a44'],cfg:['⚙️','#4f5a82','#3b4468']};
 Object.entries(META).forEach(([k,[e,c,d]])=>{const h=$(`#${k} .top h1`);if(h){const s=document.createElement('span');s.className='sq';s.style.cssText=`--c:${c};--d:${d}`;s.textContent=e;h.before(s)}});

@@ -87,7 +87,7 @@ const PiloStore = (() => {
         const gastos = S.gastos.filter(g => g.fecha === f), ingresos = ing(f, f), egresos = egr(f, f);
         return { fecha: f, ventas, gastos, medios, ingresos, egresos, vendido: sum(ventas, v => v.total), fiado: sum(S.pagos.filter(p => p.fecha === f && p.medio === 'Fiado'), p => p.monto),
           cobrosDeuda: S.pagos.filter(p => p.fecha === f && p.venta_id == null).map(p => ({ cliente: nom(p.cliente_id), medio: p.medio, monto: p.monto })), top: Object.entries(prod).sort((a, b) => b[1] - a[1]).slice(0, 5) }; },
-      reporte: ym => ({ ym, nombre: S.config.nombre, dias: api.mes(ym),
+      reporte: ym => ({ ym, nombre: S.config.nombre, direccion: S.config.direccion || '', telefono: S.config.telefono || '', logo: S.config.logo || '', dias: api.mes(ym),
         ventas: S.ventas.filter(v => v.fecha.startsWith(ym)).flatMap(v => S.venta_items.filter(i => i.venta_id === v.id).map(i => ({ fecha: v.fecha, mesa: v.mesa, tipo: v.tipo, nombre: i.nombre, cantidad: i.cantidad, precio: i.precio, subtotal: i.cantidad * i.precio }))),
         gastos: S.gastos.filter(g => g.fecha.startsWith(ym)).sort((a, b) => a.fecha.localeCompare(b.fecha)), deudas: api.deudaClientes().filter(d => d.deuda > 0) }),
       dump: () => JSON.stringify(S), marcarBackup: () => { S.config.ultimo_backup = String(Date.now()); persist(); },
