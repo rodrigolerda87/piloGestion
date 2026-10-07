@@ -8,7 +8,7 @@ const { JSDOM } = require('jsdom'), assert = require('assert'), path = require('
       w.HTMLDialogElement.prototype.showModal = function () { this.returnValue = 'ok'; if (w.__fill) { const f = w.__fill; w.__fill = null; f(this); } setTimeout(() => this.onclose && this.onclose(), 0); };
       w.addEventListener('error', e => errores.push(e.message)); w.addEventListener('unhandledrejection', e => errores.push(String(e.reason))); } });
   const w = dom.window, d = w.document, sleep = ms => new Promise(r => setTimeout(r, ms)), $ = s => d.querySelector(s), fill = (dlg, o) => Object.entries(o).forEach(([k, v]) => { dlg.querySelector('#f' + k).value = v; });
-  const nav = async t => { $(`[data-t=${t}]`).click(); await sleep(150); };
+  const nav = async t => { (t === 'cfg' ? $('#bneg') : $(`[data-t=${t}]`)).click(); await sleep(150); };
   await sleep(800);
   await nav('ventas'); assert(d.querySelectorAll('.prod').length > 0, 'productos en pantalla'); assert.strictEqual($('#back').style.display, '', 'botón volver visible'); $('#back').click(); await sleep(200); assert($('#home').classList.contains('on'));
   { const hd = $('header'), bg = w.getComputedStyle(hd).backgroundColor, jc = w.getComputedStyle(hd).justifyContent; assert(['', 'transparent', 'rgba(0, 0, 0, 0)'].includes(bg) && jc !== 'center', 'el encabezado no hereda los estilos de las barras del gráfico (' + bg + '/' + jc + ')'); assert.strictEqual(w.getComputedStyle($('#bneg')).display, 'none', 'Mi Negocio oculto para el empleado'); }
@@ -26,19 +26,27 @@ const { JSDOM } = require('jsdom'), assert = require('assert'), path = require('
   assert($('#cll').textContent.includes('Calle Falsa 123'), 'cliente en la lista'); $('#qcl').value = 'zzz'; $('#qcl').oninput(); await sleep(150); assert($('#cll').textContent.includes('No hay clientes')); $('#qcl').value = ''; $('#qcl').oninput();
   // viandas desde Ventas: cliente de la lista + cliente nuevo
   await nav('ventas'); const chip = () => [...d.querySelectorAll('#cats .chip')].find(c => c.textContent === 'Viandas');
-  await w.pilo.guardarProducto({ categoria: 'Viandas', nombre: 'Vianda armada', precio: 7000, p_retiro_transf: 7500, p_envio_efectivo: 8000, p_envio_transf: 8500 });
-  w.__fill = x => fill(x, { 0: laura.id, 4: '12:30', 7: '1', 8: 'Efectivo' }); chip().click(); await sleep(300);
-  assert($('#viandas').classList.contains('on'), 'abre la pestaña Viandas');
-  await nav('ventas'); w.__fill = x => fill(x, { 0: '', 1: 'Pedro', 3: 'Mitre 55', 4: '11:15', 7: '0', 8: 'Transferencia' }); chip().click(); await sleep(300);
+  let nota = ''; w.__fill = x => { fill(x, { 0: laura.id, 4: '12:30', 5: 2, 6: '1', 7: 'Transferencia' }); x.querySelector('#f5').dispatchEvent(new w.Event('input', { bubbles: true })); nota = x.querySelector('#dnote').textContent; }; chip().click(); await sleep(300);
+  assert($('#viandas').classList.contains('on'), 'abre la pestaña Viandas'); assert(nota.includes('17.800') && nota.includes('envío'), 'el cuadro muestra el total que cambia con cantidad, modalidad y pago: ' + nota);
+  assert.strictEqual(d.querySelector('#dlg select option[value="0"]') && 0, 0); 
+  await nav('ventas'); w.__fill = x => fill(x, { 0: '', 1: 'Pedro', 3: 'Mitre 55', 4: '11:15', 6: '0', 7: 'Transferencia' }); chip().click(); await sleep(300);
   const tv = $('#vh').textContent; assert(tv.includes('Laura') && tv.includes('Calle Falsa 123') && tv.includes('Con envío') && tv.includes('Pedro') && tv.includes('A retirar') && tv.includes('Retira en el local'), 'viandas con cliente, dirección y modalidad');
   assert(tv.indexOf('Pedro') < tv.indexOf('Laura'), 'ordenadas por horario'); assert($('#vres').textContent.includes('transferencia'));
-  $('#vh [data-e]').click(); await sleep(250); assert.strictEqual((await w.pilo.stats()).hoy, 5600 + 7500, 'vianda entregada y cobrada (Pedro: retira, transferencia)');
-  w.__fill = x => fill(x, { 1: '0', 4: 'Efectivo' }); $('#vh [data-ed]').click(); await sleep(250); assert.match($('#vh').textContent, /A retirar/); assert.match($('#vh').textContent, /7\.000/, 'modificar a retiro en efectivo de la otra vianda'); assert($('#ve').textContent.includes('Pedro'));
+  $('#vh [data-e]').click(); await sleep(250); assert.strictEqual((await w.pilo.stats()).hoy, 5600 + 7900, 'vianda entregada y cobrada (Pedro: retira, transferencia = 7900)');
+  w.__fill = x => fill(x, { 1: '0', 4: 'Efectivo', 3: 1 }); $('#vh [data-ed]').click(); await sleep(250); assert.match($('#vh').textContent, /A retirar/); assert.match($('#vh').textContent, /7\.500/, 'Laura pasa a retirar y pagar en efectivo = 7500'); assert($('#ve').textContent.includes('Pedro'));
   // admin: todas las pestañas y detalle del día
   w.__fill = x => fill(x, { 0: 'admin' }); $('#lgn').click(); await sleep(700); assert(d.body.classList.contains('adm'), 'login de administrador'); assert($('#hk').textContent.includes('Ganancia del mes') && $('#hvend').style.display !== 'none', 'inicio del administrador con ganancias'); assert.notStrictEqual(w.getComputedStyle($('.tile[data-t=stats]')).display, 'none');
   assert($('.sq'), 'iconos de color en los títulos'); assert.notStrictEqual(w.getComputedStyle($('#bneg')).display, 'none', 'Mi Negocio visible para el administrador'); assert(!$('#inn'), 'el nombre ya no está duplicado en Configuración');
-  await w.pilo.setConfig('logo', 'data:image/png;base64,iVBORw0KGgo='); w.__fill = x => { x.querySelector('#nn').value = 'Café Uri'; x.querySelector('#nd').value = 'San Martín 123'; x.querySelector('#nt').value = '3462 555555'; }; $('#bneg').click(); await sleep(300);
+  await w.pilo.setConfig('logo', 'data:image/png;base64,iVBORw0KGgo='); await nav('cfg'); assert($('#cfg').classList.contains('on'), 'Mi Negocio abre la pantalla de configuración'); assert(/Mi Negocio/.test($('#cfg h1').textContent), 'título Mi Negocio'); assert(!$('.tile[data-t=cfg]') && !d.querySelector('#dneg'), 'ya no hay mosaico Productos y ajustes ni cuadro aparte');
+  for (const [id, v] of [['#inm', 'Café Uri'], ['#idir', 'San Martín 123'], ['#itel', '3462 555555']]) { $(id).value = v; $(id).onchange({ target: $(id) }); await sleep(120); }
   assert.strictEqual($('#nm').textContent, 'Café Uri', 'nombre del negocio'); assert($('#nsub').textContent.includes('San Martín 123') && $('#nsub').textContent.includes('3462 555555'), 'dirección y teléfono'); assert($('#lg img'), 'logo en el encabezado'); assert.strictEqual((await w.pilo.config()).direccion, 'San Martín 123', 'guardado');
+  await nav('cfg'); assert($('#clogo img'), 'logo en Mi Negocio'); assert.strictEqual($('#inm').value, 'Café Uri'); assert($('#pv1') && $('#pl .pl') && $('#bpw') && $('#bdl') && $('input[type=color]') && $('#bpc'), 'todo lo de Configuración está dentro de Mi Negocio');
+  $('#inm').value = ''; $('#inm').onchange({ target: $('#inm') }); await sleep(250); assert.strictEqual($('#nm').textContent, 'Café Uri', 'el nombre no puede quedar vacío'); assert.strictEqual($('#inm').value, 'Café Uri'); $('#cquit').click(); await sleep(150); assert(!$('#lg img'), 'quitar logo');
+  // quitar una vianda de la lista desde la pantalla (con el cuadro propio de confirmación)
+  await w.pilo.agregarVianda({ cliente_id: laura.id, horario: '15:00', cantidad: 1, envio: false, medio: 'Efectivo' }); await nav('viandas'); { const q0 = d.querySelectorAll('#vh [data-q]').length; assert(q0 > 0); [...d.querySelectorAll('#vh [data-q]')].pop().click(); await sleep(300); assert.strictEqual(d.querySelectorAll('#vh [data-q]').length, q0 - 1, 'vianda quitada'); }
+  // precios de viandas en Configuración
+  await nav('cfg'); $('#pv1').value = '8000'; $('#pv1').onchange({ target: $('#pv1') }); await sleep(200); assert.strictEqual((await w.pilo.preciosViandas()).efectivo, 8000); assert($('#pvx').textContent.includes('8.000') && $('#pvx').textContent.includes('9.000'), 'ejemplos de precios'); $('#pv1').value = '7500'; $('#pv1').onchange({ target: $('#pv1') }); await sleep(150);
+  assert(!d.querySelector('#aviso-version'), 'sin aviso de archivos desactualizados');
   // productos: eliminar y aumentar precios
   await nav('cfg'); const n0 = (await w.pilo.productos()).length, med0 = (await w.pilo.productos()).find(x => x.nombre === 'Medialuna').precio, fact0 = (await w.pilo.productos()).find(x => x.nombre === 'Factura').precio;
   w.__fill = x => { x.querySelector('#pp').value = '10'; [...x.querySelectorAll('.pk')].filter(c => c.parentElement.textContent.includes('Medialuna')).forEach(c => { c.checked = true; }); }; $('#bpc').click(); await sleep(300);
@@ -47,7 +55,14 @@ const { JSDOM } = require('jsdom'), assert = require('assert'), path = require('
   await nav('inicio'); const hoy = w.pilo && (await w.pilo.dia(new Date().toISOString().slice(0, 10))); const cel = $('.day.hoy'); assert(cel, 'día de hoy marcado'); cel.click(); await sleep(250);
   assert($('#dia').classList.contains('on'), 'el calendario lleva al día'); assert($('#dv').textContent.includes('Mesa 2') && $('#dv').textContent.includes('Vianda'), 'ventas del día'); assert($('#ds').textContent.includes('Más vendidos') && $('#dk').textContent.includes('Cobrado'), 'estadísticas del día');
   $('#dprev').click(); await sleep(150); assert($('#dv').textContent.includes('No hubo ventas'), 'día anterior sin ventas'); $('#dback').click(); await sleep(150); assert($('#inicio').classList.contains('on')); $('#back').click(); await sleep(250); assert($('#home').classList.contains('on') && $('#back').style.display === 'none', 'volver al inicio'); assert($('#htop').textContent.includes('Cortado') || $('#htop').textContent.includes('Café'), 'más vendidos en el inicio');
-  $('[data-t=cfg]').click(); await sleep(150); w.__fill = null; const pre = $('#inu'); pre.value = 'Uri'; pre.onchange({ target: pre }); await sleep(150); assert.strictEqual($('#av').textContent, 'U'); $('[data-t=inicio]').click(); await sleep(150);
+  $('#bneg').click(); await sleep(150); w.__fill = null; const pre = $('#inu'); pre.value = 'Uri'; pre.onchange({ target: pre }); await sleep(150); assert.strictEqual($('#av').textContent, 'U'); $('[data-t=inicio]').click(); await sleep(150);
+  await nav('stats'); assert(/\$/.test($('#s1').textContent) && /venta/.test($('#s1n').textContent), 'ventas de hoy'); assert.strictEqual(d.querySelectorAll('#stats .kbtn').length, 3, 'tres botones de ganancia');
+  { const n = () => d.querySelectorAll('#sgraf rect').length, b = p => $(`#stats .kbtn[data-p=${p}]`);
+    assert.strictEqual(n(), new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate(), 'mensual: una barra por día'); assert(b('mes').classList.contains('on'));
+    b('anio').click(); await sleep(250); assert.strictEqual(n(), 12, 'anual: una barra por mes'); assert(b('anio').classList.contains('on') && /Año/.test($('#sptit').textContent));
+    b('sem').click(); await sleep(250); assert.strictEqual(n(), 7, 'semanal: una barra por día'); assert(/Semana/.test($('#sptit').textContent));
+    assert($('#stab').textContent.includes('Efectivo') && $('#stab').textContent.includes('Transferencia') && $('#stab').textContent.includes('Total'), 'tabla por forma de pago');
+    const t0 = $('#sptit').textContent; assert($('#spn').disabled, 'no se puede avanzar al futuro'); $('#spv').click(); await sleep(250); assert.notStrictEqual($('#sptit').textContent, t0, 'semana anterior'); assert.strictEqual($('#spn').disabled, false); $('#spn').click(); await sleep(250); assert.strictEqual($('#sptit').textContent, t0); }
   $('#bxl').click(); $('#bpd').click(); await nav('cfg'); $('#bdl').click(); await sleep(150);
   assert.deepStrictEqual(errores, [], 'sin errores en pantalla'); console.log('OK: pantallas sin errores', alerts.length ? '(avisos: ' + alerts.join(' | ').replace(/\n/g, ' ') + ')' : '');
   process.exit(0);
