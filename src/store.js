@@ -20,6 +20,10 @@ const PiloStore = (() => {
     }
     S.vianda_pedidos = S.vianda_pedidos || []; // datos guardados con versiones anteriores
     const pvp = (p, envio, medio) => { const t = medio === 'Transferencia', k = envio ? (t ? 'p_envio_transf' : 'p_envio_efectivo') : (t ? 'p_retiro_transf' : 'precio'); return p[k] ?? p.precio; }; // precio de vianda según modalidad y forma de pago
+    // Precios de viandas (editables en Configuración): efectivo, transferencia, envío por vianda y hasta cuántas viandas se cobra el envío
+    const nn = (v, d) => (v === undefined || v === '' || isNaN(+v)) ? d : +v;
+    const pvCfg = () => ({ efectivo: nn(S.config.vianda_efectivo, 7500), transferencia: nn(S.config.vianda_transferencia, 7900), envio: nn(S.config.vianda_envio, 1000), envio_max: nn(S.config.vianda_envio_max, 2) });
+    const calcV = (envio, medio, cant) => { const c = pvCfg(), unit = medio === 'Transferencia' ? c.transferencia : c.efectivo, env = envio ? c.envio * Math.min(cant, c.envio_max) : 0; return { unit, envio: env, total: unit * cant + env }; };
     const sum = (a, f) => a.reduce((t, x) => t + f(x), 0), ins = i => S.insumos.find(x => x.id === i);
     const deuda = c => sum(S.pagos.filter(p => p.cliente_id === c.id && p.medio === 'Fiado'), p => p.monto) - sum(S.pagos.filter(p => p.cliente_id === c.id && p.venta_id == null), p => p.monto);
     const ing = (a, b) => sum(S.pagos.filter(p => p.fecha >= a && p.fecha <= b && p.medio !== 'Fiado'), p => p.monto), egr = (a, b) => sum(S.gastos.filter(g => g.fecha >= a && g.fecha <= b), g => g.monto);
@@ -32,8 +36,9 @@ const PiloStore = (() => {
         if (p.id) { Object.assign(S.productos.find(q => q.id === p.id), { categoria: p.categoria, nombre: p.nombre, precio: p.precio, costo: p.costo || 0 }, x); persist(); return p.id; }
         const n = id('productos'); S.productos.push({ id: n, categoria: p.categoria, nombre: p.nombre, precio: p.precio, costo: p.costo || 0, activo: 1, ...x }); persist(); return n; },
       eliminarProducto: pid => { const p = S.productos.find(x => x.id === pid); if (p) { p.activo = 0; persist(); } }, // queda oculto; las ventas ya registradas no cambian
-      ajustarPrecios: ({ ids, porcentaje, redondeo = 1 }) => { if (!porcentaje || !(porcentaje > -100)) throw new Error('Porcentaje inválido'); const rd = redondeo || 1, f = v => Math.max(0, Math.round(v * (1 + porcentaje / 100) / rd) * rd); let n = 0;
-        S.productos.filter(p => p.activo && ids.includes(p.id)).forEach(p => { ['precio', 'p_retiro_transf', 'p_envio_efectivo', 'p_envio_transf'].forEach(k => { if (typeof p[k] === 'number') p[k] = f(p[k]); }); n++; }); persist(); return n; },
+      ajustarPrecios: ({ ids = [], porcentaje, redondeo = 1, viandas = false }) => { if (!porcentaje || !(porcentaje > -100)) throw new Error('Porcentaje inválido'); const rd = redondeo || 1, f = v => Math.max(0, Math.round(v * (1 + porcentaje / 100) / rd) * rd); let n = 0;
+        S.productos.filter(p => p.activo && ids.includes(p.id)).forEach(p => { ['precio', 'p_retiro_transf', 'p_envio_efectivo', 'p_envio_transf'].forEach(k => { if (typeof p[k] === 'number') p[k] = f(p[k]); }); n++; });
+        if (viandas) { const c = pvCfg(); ['efectivo', 'transferencia', 'envio'].forEach(k => { S.config['vianda_' + k] = String(f(c[k])); }); n++; } persist(); return n; },
       cobrar: ({ mesa = 'Mostrador', tipo = 'local', descuento = 0, cliente_id = null, items, pagos }) => {
         const total = sum(items, i => i.cantidad * i.precio) - descuento;
         if (Math.abs(sum(pagos, p => p.monto) - total) > 0.01) throw new Error('Los pagos no suman el total');
@@ -69,20 +74,23 @@ const PiloStore = (() => {
       receta: pid => S.recetas.filter(r => r.producto_id === pid).map(r => ({ insumo_id: r.insumo_id, cantidad: r.cantidad })),
       setReceta: (pid, l) => { S.recetas = S.recetas.filter(r => r.producto_id !== pid).concat(l.map(x => ({ producto_id: pid, insumo_id: x.insumo_id, cantidad: x.cantidad }))); persist(); },
       // Viandas: cada pedido tiene cliente, dirección, horario y forma de pago (efectivo o transferencia)
-      agregarVianda: v => { const pr = S.productos.find(x => x.id === v.producto_id); if (!pr) throw new Error('La vianda elegida ya no existe'); const n = id('vianda_pedidos'), envio = !!v.envio;
-        S.vianda_pedidos.push({ id: n, fecha: hoy(), cliente_id: v.cliente_id, direccion: envio ? (v.direccion || '') : '', horario: v.horario || '12:00', producto_id: pr.id, nombre: pr.nombre, precio: pvp(pr, envio, v.medio), cantidad: v.cantidad || 1, envio, medio: v.medio, estado: 'pendiente' }); persist(); return n; },
-      editarVianda: (pid, c) => { const p = S.vianda_pedidos.find(x => x.id === pid); if (!p || p.estado !== 'pendiente') throw new Error('Esa vianda ya no está pendiente'); const pr = S.productos.find(x => x.id === p.producto_id);
-        Object.assign(p, { horario: c.horario || p.horario, envio: !!c.envio, direccion: c.envio ? (c.direccion || '') : '', cantidad: c.cantidad || p.cantidad, medio: c.medio || p.medio }); if (pr) p.precio = pvp(pr, p.envio, p.medio); persist(); },
-      viandasLista: () => { const cl = i => S.clientes.find(c => c.id === i) || {}, enr = p => ({ ...p, cliente: cl(p.cliente_id).nombre || '', telefono: cl(p.cliente_id).telefono || '', total: p.precio * p.cantidad }), ord = (a, b) => a.fecha.localeCompare(b.fecha) || a.horario.localeCompare(b.horario);
+      preciosViandas: () => pvCfg(), calcularVianda: (envio, medio, cant) => calcV(!!envio, medio, cant || 1),
+      agregarVianda: v => { const cant = v.cantidad || 1, envio = !!v.envio, r = calcV(envio, v.medio, cant), n = id('vianda_pedidos');
+        S.vianda_pedidos.push({ id: n, fecha: hoy(), cliente_id: v.cliente_id, direccion: envio ? (v.direccion || '') : '', horario: v.horario || '12:00', producto_id: null, nombre: 'Vianda', precio: r.unit, envio_monto: r.envio, total: r.total, cantidad: cant, envio, medio: v.medio, estado: 'pendiente' }); persist(); return n; },
+      editarVianda: (pid, c) => { const p = S.vianda_pedidos.find(x => x.id === pid); if (!p || p.estado !== 'pendiente') throw new Error('Esa vianda ya no está pendiente');
+        const cant = c.cantidad || p.cantidad, envio = !!c.envio, medio = c.medio || p.medio, r = calcV(envio, medio, cant);
+        Object.assign(p, { horario: c.horario || p.horario, envio, direccion: envio ? (c.direccion || '') : '', cantidad: cant, medio, precio: r.unit, envio_monto: r.envio, total: r.total }); persist(); },
+      viandasLista: () => { const cl = i => S.clientes.find(c => c.id === i) || {}, enr = p => ({ ...p, cliente: cl(p.cliente_id).nombre || '', telefono: cl(p.cliente_id).telefono || '', total: p.total ?? p.precio * p.cantidad }), ord = (a, b) => a.fecha.localeCompare(b.fecha) || a.horario.localeCompare(b.horario);
         return { pendientes: S.vianda_pedidos.filter(p => p.estado === 'pendiente').map(enr).sort(ord), entregadas: S.vianda_pedidos.filter(p => p.estado === 'entregada' && p.fecha === hoy()).map(enr).sort(ord) }; },
       entregarVianda: pid => { const p = S.vianda_pedidos.find(x => x.id === pid); if (!p || p.estado !== 'pendiente') throw new Error('Esa vianda ya no está pendiente'); const c = S.clientes.find(x => x.id === p.cliente_id) || {};
-        const r = api.cobrar({ mesa: 'Vianda: ' + (c.nombre || ''), tipo: p.envio ? 'delivery' : 'llevar', cliente_id: p.cliente_id, items: [{ producto_id: p.producto_id, nombre: p.nombre + (p.envio ? ' (con envío)' : ' (a retirar)'), cantidad: p.cantidad, precio: p.precio }], pagos: [{ medio: p.medio, monto: p.precio * p.cantidad }] });
+        const items = [{ producto_id: p.producto_id || null, nombre: p.nombre || 'Vianda', cantidad: p.cantidad, precio: p.precio }]; if (p.envio_monto) items.push({ producto_id: null, nombre: 'Envío', cantidad: 1, precio: p.envio_monto });
+        const r = api.cobrar({ mesa: 'Vianda: ' + (c.nombre || ''), tipo: p.envio ? 'delivery' : 'llevar', cliente_id: p.cliente_id, items, pagos: [{ medio: p.medio, monto: p.precio * p.cantidad + (p.envio_monto || 0) }] });
         p.estado = 'entregada'; persist(); return r; },
       quitarVianda: pid => { S.vianda_pedidos = S.vianda_pedidos.filter(p => p.id !== pid); persist(); },
       // Detalle de un día: ventas, gastos y estadísticas
       dia: f => { const nom = i => (S.clientes.find(c => c.id === i) || {}).nombre || '';
         const ventas = S.ventas.filter(v => v.fecha === f).map(v => ({ id: v.id, hora: v.hora || '', mesa: v.mesa, tipo: v.tipo, total: v.total, descuento: v.descuento, cliente: nom(v.cliente_id), items: S.venta_items.filter(i => i.venta_id === v.id).map(i => ({ nombre: i.nombre, cantidad: i.cantidad, precio: i.precio })), pagos: S.pagos.filter(p => p.venta_id === v.id).map(p => ({ medio: p.medio, monto: p.monto })) }));
-        const prod = {}; ventas.forEach(v => v.items.forEach(i => prod[i.nombre] = (prod[i.nombre] || 0) + i.cantidad));
+        const prod = {}; ventas.forEach(v => v.items.filter(i => i.nombre !== 'Envío').forEach(i => prod[i.nombre] = (prod[i.nombre] || 0) + i.cantidad));
         const medios = {}; S.pagos.filter(p => p.fecha === f && p.medio !== 'Fiado').forEach(p => medios[p.medio] = (medios[p.medio] || 0) + p.monto);
         const gastos = S.gastos.filter(g => g.fecha === f), ingresos = ing(f, f), egresos = egr(f, f);
         return { fecha: f, ventas, gastos, medios, ingresos, egresos, vendido: sum(ventas, v => v.total), fiado: sum(S.pagos.filter(p => p.fecha === f && p.medio === 'Fiado'), p => p.monto),
@@ -90,13 +98,25 @@ const PiloStore = (() => {
       reporte: ym => ({ ym, nombre: S.config.nombre, direccion: S.config.direccion || '', telefono: S.config.telefono || '', logo: S.config.logo || '', dias: api.mes(ym),
         ventas: S.ventas.filter(v => v.fecha.startsWith(ym)).flatMap(v => S.venta_items.filter(i => i.venta_id === v.id).map(i => ({ fecha: v.fecha, mesa: v.mesa, tipo: v.tipo, nombre: i.nombre, cantidad: i.cantidad, precio: i.precio, subtotal: i.cantidad * i.precio }))),
         gastos: S.gastos.filter(g => g.fecha.startsWith(ym)).sort((a, b) => a.fecha.localeCompare(b.fecha)), deudas: api.deudaClientes().filter(d => d.deuda > 0) }),
+      // Resumen de un período (semana, mes o año): una barra por día o por mes + tabla por forma de pago (ingresos, egresos y ganancia)
+      periodo: ({ desde, hasta, agrupar }) => {
+        const D = x => new Date(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8, 10)), porMes = agrupar === 'mes', clave = f => porMes ? f.slice(0, 7) : f, ser = {}, claves = [];
+        if (porMes) { for (const d = new Date(D(desde).getFullYear(), D(desde).getMonth(), 1); d <= D(hasta); d.setMonth(d.getMonth() + 1)) claves.push(fechaLocal(d).slice(0, 7)); }
+        else { for (const d = D(desde); d <= D(hasta); d.setDate(d.getDate() + 1)) claves.push(fechaLocal(d)); }
+        claves.forEach(k => ser[k] = { clave: k, ingresos: 0, egresos: 0 });
+        const medios = { Efectivo: { ingresos: 0, egresos: 0 }, Transferencia: { ingresos: 0, egresos: 0 }, QR: { ingresos: 0, egresos: 0 }, Tarjeta: { ingresos: 0, egresos: 0 } }, m = k => medios[k] = medios[k] || { ingresos: 0, egresos: 0 };
+        S.pagos.filter(p => p.fecha >= desde && p.fecha <= hasta && p.medio !== 'Fiado').forEach(p => { ser[clave(p.fecha)].ingresos += p.monto; m(p.medio).ingresos += p.monto; });
+        S.gastos.filter(g => g.fecha >= desde && g.fecha <= hasta).forEach(g => { ser[clave(g.fecha)].egresos += g.monto; m(g.medio || 'Efectivo').egresos += g.monto; });
+        const series = claves.map(k => ({ ...ser[k], ganancia: ser[k].ingresos - ser[k].egresos })), ingresos = sum(series, x => x.ingresos), egresos = sum(series, x => x.egresos);
+        return { series, medios, totales: { ingresos, egresos, ganancia: ingresos - egresos } };
+      },
       dump: () => JSON.stringify(S), marcarBackup: () => { S.config.ultimo_backup = String(Date.now()); persist(); },
       backupVencido: () => Date.now() - (+S.config.ultimo_backup || 0) > 7 * 864e5,
-      restore: j => { const o = JSON.parse(j); if (!o || !Array.isArray(o.productos) || !o.config || !o.admin) throw new Error('El archivo no parece un backup de Pilo'); S = o; persist(); },
+      restore: j => { const o = JSON.parse(j); if (!o || !Array.isArray(o.productos) || !o.config || !o.admin) throw new Error('El archivo no parece un backup de Pilo'); S = o; return persist(); },
       flush: () => cola
     };
     return api;
   }
-  return { crear, hoy };
+  return { crear, hoy, version: '7' };
 })();
 if (typeof module !== 'undefined') module.exports = PiloStore;

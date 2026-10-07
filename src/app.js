@@ -1,4 +1,6 @@
-const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],R=document.documentElement;
+window.PILO_V=Object.assign(window.PILO_V||{},{app:'8'});
+const nul=new Proxy(function(){},{get:(t,p)=>p===Symbol.toPrimitive?()=>'':nul,set:()=>true,apply:()=>nul}); // si falta un elemento (archivos de versiones mezcladas) no se corta todo el programa
+const $=s=>{const e=document.querySelector(s);if(!e)console.warn('Pilo: falta el elemento',s);return e||nul},$$=s=>[...document.querySelectorAll(s)],R=document.documentElement;
 const fm=n=>'$ '+Math.round(n||0).toLocaleString('es-AR'),p2=n=>String(n).padStart(2,'0');
 const hoy=()=>{const d=new Date();return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())};
 const COL={Efectivo:'#8fd3b0',Transferencia:'#b9a8ec',QR:'#f4b896',Tarjeta:'#86c1e6'},MEDIOS=Object.keys(COL);
@@ -7,9 +9,14 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 let adm=false,prods=[],cat=null,mesa='Mostrador',tipo='local',ords={},ym=hoy().slice(0,7),selDay=hoy();
 const cur=()=>ords[mesa]??={items:{},desc:0};
 const sub=()=>Object.values(cur().items).reduce((a,i)=>a+i.n*i.precio,0),total=()=>Math.max(0,sub()-cur().desc);
-function ask(title,fields,ok='Aceptar'){return new Promise(res=>{const d=$('#dlg');$('#dt').textContent=title;$('#dok').textContent=ok;
+function ask(title,fields,ok='Aceptar',note,soloOk){return new Promise(res=>{const d=$('#dlg');$('#dt').textContent=title;$('#dok').textContent=ok;
 $('#df').innerHTML=fields.map((f,i)=>`<label>${f.l}${f.opts?`<select id="f${i}">${f.opts.map(o=>`<option value="${o[0]}"${o[0]==f.sel?' selected':''}>${o[1]}</option>`).join('')}</select>`:`<input id="f${i}" type="${f.t||'text'}" value="${f.v??''}">`}</label>`).join('');
+$('#dcan').style.display=soloOk?'none':'';const df=$('#df');if(note){df.insertAdjacentHTML('beforeend','<div id="dnote" style="font:800 17px \'Baloo 2\',sans-serif;margin-top:8px"></div>');const u=()=>{$('#dnote').innerHTML=note(fields.map((f,i)=>$('#f'+i).value))};df.oninput=u;df.onchange=u;u()}else{df.oninput=null;df.onchange=null}
 d.onclose=()=>res(d.returnValue==='ok'?fields.map((f,i)=>$('#f'+i).value):null);d.showModal();$('#f0')&&$('#f0').focus()})}
+// Cuadros propios en lugar de los avisos del navegador (confirmación y alerta): esos pueden estar bloqueados (Chrome, apps con navegador interno) y entonces los botones no hacen nada
+const confirmar=(msg,ok='Aceptar')=>ask('Confirmar',[],ok,()=>esc(msg).replace(/\n/g,'<br>')).then(r=>!!r);
+const aviso=msg=>ask('Aviso',[],'Entendido',()=>esc(msg).replace(/\n/g,'<br>'),true);
+window.alert=m=>{aviso(m)};
 function go(t,arg){$$('.tab').forEach(e=>e.classList.remove('on'));$('#'+t).classList.add('on');$('#back').style.display=t==='home'?'none':'';window.scrollTo(0,0);({home:rH,inicio:rI,caja:rC,stats:rS,cfg:rG,ventas:rV,viandas:rVi,stock:rSt,clientes:rCl,dia:rD})[t](arg)}
 $$('[data-t]').forEach(b=>b.onclick=()=>go(b.dataset.t));$('#back').onclick=()=>go('home');
 $('#lgn').onclick=async()=>{if(adm){adm=false}else{const r=await ask('Clave de administrador',[{l:'Clave',t:'password'}],'Entrar');if(!r)return;if(!await pilo.login(r[0]))return alert('Clave incorrecta');adm=true}
@@ -55,19 +62,42 @@ const d=(await pilo.deudaClientes()).filter(x=>x.deuda>0);$('#dl').innerHTML=d.l
 $$('#dl [data-c]').forEach(b=>b.onclick=async()=>{const r=await ask('Cobrar fiado',[{l:'Monto ($)',t:'number',v:b.dataset.d},{l:'Medio de pago',opts:MEDIOS.map(m=>[m,m])}],'Cobrar');if(r){try{await pilo.cobrarDeuda({cliente_id:+b.dataset.c,monto:+r[0],medio:r[1]});rC()}catch(e){err(e)}}})}
 $('#bgas').onclick=async()=>{const r=await ask('Registrar gasto',[{l:'Categoría',opts:['Insumos','Proveedor','Servicios','Alquiler','Sueldos','Otros'].map(x=>[x,x])},{l:'Proveedor o detalle'},{l:'Monto ($)',t:'number'},{l:'Medio de pago',opts:MEDIOS.map(m=>[m,m])}],'Guardar');
 if(!r||!(+r[2]>0))return;await pilo.gasto({categoria:r[0],proveedor:r[1],monto:+r[2],medio:r[3]});rC()};
-// ---- Estadísticas
-async function rS(){const s=await pilo.stats();$('#s1').textContent=fm(s.hoy);$('#s2').textContent=fm(s.semana);$('#s3').textContent=fm(s.mes);const mx=Math.max(...s.porDia,1);
-$('#bars').innerHTML=s.porDia.map(v=>`<div class="bar" style="height:${Math.max(v/mx*100,3)}%">${v?Math.round(v/1000)+'k':''}</div>`).join('');$('#bl').innerHTML=['L','M','M','J','V','S','D'].map(x=>`<div>${x}</div>`).join('');
-const tt=MEDIOS.reduce((a,m)=>a+(s.medios[m]||0),0)||1;$('#pm').innerHTML=MEDIOS.map(m=>{const v=s.medios[m]||0;return`<div style="display:flex;justify-content:space-between"><span>${m}</span><b>${fm(v)} · ${Math.round(v/tt*100)}%</b></div><div class="pb"><i style="width:${v/tt*100}%;background:${COL[m]}"></i></div>`}).join('')}
+// ---- Estadísticas: ventas de hoy y ganancia semanal / mensual / anual, con gráfico de barras y tabla por forma de pago
+let per='mes',off=0;
+const iso=d=>d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()),MES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],DIA=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+function rango(p,o){const h=new Date();
+if(p==='sem'){const d=new Date(h.getFullYear(),h.getMonth(),h.getDate()-((h.getDay()+6)%7)+o*7),e=new Date(d.getFullYear(),d.getMonth(),d.getDate()+6),f=x=>x.toLocaleDateString('es-AR',{day:'numeric',month:'short'});return{desde:iso(d),hasta:iso(e),agrupar:'dia',titulo:`Semana del ${f(d)} al ${f(e)}`}}
+if(p==='mes'){const d=new Date(h.getFullYear(),h.getMonth()+o,1),e=new Date(d.getFullYear(),d.getMonth()+1,0),t=d.toLocaleDateString('es-AR',{month:'long',year:'numeric'});return{desde:iso(d),hasta:iso(e),agrupar:'dia',titulo:t[0].toUpperCase()+t.slice(1)}}
+const y=h.getFullYear()+o;return{desde:y+'-01-01',hasta:y+'-12-31',agrupar:'mes',titulo:'Año '+y}}
+const corto=v=>{const a=Math.abs(v),s=v<0?'-':'';return s+(a>=1e6?(a/1e6).toFixed(1).replace('.0','')+' M':a>=1e3?Math.round(a/1e3)+'k':Math.round(a))};
+function etiqueta(c,p){const [y,m,d]=c.split('-');return p==='anio'?MES[+m-1]:p==='sem'?DIA[new Date(y,m-1,d).getDay()]+' '+(+d):String(+d)}
+function grafico(S,p){const W=720,H=250,pl=50,pr=8,pt=16,pb=30,n=S.length,bw=(W-pl-pr)/n,paso=p==='mes'?Math.ceil(n/16):1;
+let mx=Math.max(0,...S.map(s=>s.ganancia)),mn=Math.min(0,...S.map(s=>s.ganancia)),ticks=[0];
+if(mx>mn){const raw=(mx-mn)/4,mag=Math.pow(10,Math.floor(Math.log10(raw))),st=[1,2,5,10].map(x=>x*mag).find(x=>x>=raw);mn=Math.floor(mn/st)*st;mx=Math.ceil(mx/st)*st;ticks=[];for(let v=mn;v<=mx+st/2;v+=st)ticks.push(v)}else mx=1;
+const rg=mx-mn,Y=v=>pt+(mx-v)/rg*(H-pt-pb),y0=Y(0);
+let g='';ticks.forEach(v=>{const yy=Y(v);g+=`<line x1="${pl}" x2="${W-pr}" y1="${yy}" y2="${yy}" style="stroke:var(--ln)"/><text x="${pl-6}" y="${yy+4}" text-anchor="end" font-size="10" style="fill:var(--mut)">${corto(v)}</text>`});
+g+=`<line x1="${pl}" x2="${W-pr}" y1="${y0}" y2="${y0}" style="stroke:var(--mut)"/>`;
+S.forEach((s,i)=>{const v=s.ganancia,x=pl+i*bw+bw*.14,w=bw*.72,yy=Y(v),hh=v?Math.max(Math.abs(yy-y0),2):0,tit=p==='anio'?MES[+s.clave.slice(5)-1]+' '+s.clave.slice(0,4):s.clave.split('-').reverse().join('/');
+g+=`<rect x="${x}" y="${Math.min(yy,y0)}" width="${w}" height="${hh}" rx="3" style="fill:${v<0?'#e0561f':'#0f9d9a'}"><title>${tit}: ${fm(v)} · ingresos ${fm(s.ingresos)} · egresos ${fm(s.egresos)}</title></rect>`;
+if(i%paso===0)g+=`<text x="${x+w/2}" y="${H-10}" text-anchor="middle" font-size="10" style="fill:var(--mut)">${etiqueta(s.clave,p)}</text>`;
+if(n<=12&&v)g+=`<text x="${x+w/2}" y="${v<0?yy+11:yy-4}" text-anchor="middle" font-size="9" style="fill:var(--tx)">${corto(v)}</text>`});
+return`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ganancia por ${p==='anio'?'mes':'día'}" style="width:100%;height:auto;display:block">${g}</svg>`}
+function tabla(P){const ms=[...new Set([...MEDIOS,...Object.keys(P.medios)])],g=x=>`<td class="${x<0?'rojo':''}">${fm(x)}</td>`;
+return`<table class="tb"><tr><th>Forma de pago</th><th>Ingresos</th><th>Egresos</th><th>Ganancia</th></tr>`+ms.map(m=>{const x=P.medios[m]||{ingresos:0,egresos:0};return`<tr><td><i class="dot" style="background:${COL[m]||'#999'}"></i>${esc(m)}</td><td>${fm(x.ingresos)}</td><td>${fm(x.egresos)}</td>${g(x.ingresos-x.egresos)}</tr>`}).join('')+`<tr class="tt"><td>Total</td><td>${fm(P.totales.ingresos)}</td><td>${fm(P.totales.egresos)}</td>${g(P.totales.ganancia)}</tr></table>`}
+async function rS(){const d=await pilo.dia(hoy());$('#s1').textContent=fm(d.vendido);$('#s1n').textContent=d.ventas.length+(d.ventas.length===1?' venta':' ventas');
+const tot=await Promise.all(['sem','mes','anio'].map(async p=>(await pilo.periodo(rango(p,0))).totales.ganancia));['#s2','#s3','#s4'].forEach((s,i)=>$(s).textContent=fm(tot[i]));
+$$('#stats .kbtn').forEach(b=>{b.classList.toggle('on',b.dataset.p===per);b.onclick=()=>{per=b.dataset.p;off=0;rS()}});
+const r=rango(per,off),P=await pilo.periodo(r);$('#sptit').textContent=r.titulo;$('#sgraf').innerHTML=grafico(P.series,per);$('#stab').innerHTML=tabla(P);$('#spn').disabled=off>=0;$('#spn').style.opacity=off>=0?.4:1}
+$('#spv').onclick=()=>{off--;rS()};$('#spn').onclick=()=>{if(off<0){off++;rS()}};
 // ---- Configuración
 const aplicar=c=>{['c1','c2','c3','c4'].forEach(k=>c[k]&&R.style.setProperty('--'+k,c[k]));$('#nm').textContent=c.nombre||'Negocio';pintaLogo($('#lg'),c.logo);$('#nsub').textContent=[c.direccion,c.telefono].filter(Boolean).join(' · ')||'Cafetería y comidas';$('#av').textContent=(c.usuario||'U')[0].toUpperCase();document.title=(c.nombre||'')+' · Gestión'};
-async function rG(){const c=await pilo.config();$('#inu').value=c.usuario||'';$$('input[type=color]').forEach(i=>i.value=c[i.dataset.v]);
-const p=await pilo.productos();$('#pl').innerHTML=p.map(x=>`<div class="row pl" data-i="${x.id}" style="align-items:flex-start"><span>${esc(x.categoria)} · ${esc(x.nombre)}</span><span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end">${precioTxt(x)}<button class="btn s" data-x="${x.id}" style="width:auto;padding:6px 10px">Eliminar</button></span></div>`).join('');
+async function rG(){const c=await pilo.config();$('#inu').value=c.usuario||'';$('#inm').value=c.nombre||'';$('#idir').value=c.direccion||'';$('#itel').value=c.telefono||'';pintaLogo($('#clogo'),c.logo);pcargarViandas();$$('input[type=color]').forEach(i=>i.value=c[i.dataset.v]);
+const p=(await pilo.productos()).filter(x=>x.categoria!=='Viandas');$('#pl').innerHTML=p.map(x=>`<div class="row pl" data-i="${x.id}" style="align-items:flex-start"><span>${esc(x.categoria)} · ${esc(x.nombre)}</span><span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><b>${fm(x.precio)}</b><button class="btn s" data-x="${x.id}" style="width:auto;padding:6px 10px">Eliminar</button></span></div>`).join('');
 $$('#pl .pl').forEach(e=>e.onclick=()=>editProd(p.find(q=>q.id==e.dataset.i)));
-$$('#pl [data-x]').forEach(b=>b.onclick=async ev=>{ev.stopPropagation();const x=p.find(q=>q.id==b.dataset.x);if(!confirm(`¿Eliminar "${x.nombre}"? Las ventas ya registradas no se modifican.`))return;await pilo.eliminarProducto(x.id);rG()})}
+$$('#pl [data-x]').forEach(b=>b.onclick=async ev=>{ev.stopPropagation();const x=p.find(q=>q.id==b.dataset.x);if(!await confirmar(`¿Eliminar "${x.nombre}"? Las ventas ya registradas no se modifican.`,'Eliminar'))return;await pilo.eliminarProducto(x.id);rG()})}
 $('#bnp').onclick=async()=>{const r=await ask('Nuevo producto',[{l:'Categoría'},{l:'Nombre'},{l:'Precio ($)',t:'number'},{l:'Costo ($, opcional)',t:'number'}],'Crear');if(r&&r[0]&&r[1]&&+r[2]>0){await pilo.guardarProducto({categoria:r[0],nombre:r[1],precio:+r[2],costo:+r[3]||0});rG()}};
 $('#inu').onchange=async e=>{await pilo.setConfig('usuario',e.target.value.trim());aplicar(await pilo.config())};$('#bdl').onclick=async()=>{try{await pilo.exportarBackup()}catch(e){err(e)}};
-$('#brs').onchange=async e=>{const f=e.target.files[0];if(!f)return;if(!confirm('Esto reemplaza TODOS los datos actuales por los del backup. ¿Continuar?'))return;try{await pilo.importarBackup(await f.text());alert('Backup restaurado');location.reload()}catch(x){err(x)}};
+$('#brs').onchange=async e=>{const f=e.target.files[0];if(!f)return;if(!await confirmar('Esto reemplaza TODOS los datos actuales por los del backup. ¿Continuar?','Restaurar'))return;try{await pilo.importarBackup(await f.text());await aviso('Backup restaurado');location.reload()}catch(x){err(x)}};
 $$('input[type=color]').forEach(i=>i.oninput=async()=>{R.style.setProperty('--'+i.dataset.v,i.value);pilo.setConfig(i.dataset.v,i.value)});
 $$('[data-th]').forEach(b=>b.onclick=()=>{R.dataset.theme=b.dataset.th;try{localStorage.setItem('tema',b.dataset.th)}catch{}});
 $('#bpw').onclick=async()=>{const r=await ask('Nueva clave de administrador',[{l:'Clave nueva',t:'password'},{l:'Repetir clave',t:'password'}],'Cambiar');if(!r)return;if(r[0].length<4||r[0]!==r[1])return alert('Las claves no coinciden o son muy cortas (mínimo 4)');await pilo.cambiarClave(r[0]);alert('Clave cambiada')};
@@ -76,46 +106,46 @@ try{const t=localStorage.getItem('tema');if(t)R.dataset.theme=t}catch{}
 
 // ---- Exportar
 const exp=tipo=>async()=>{try{const f=await pilo.exportar(tipo,ym);if(f)alert('Guardado en:\n'+f)}catch(e){err(e)}};$('#bxl').onclick=exp('excel');$('#bpd').onclick=exp('pdf');
-// ---- Viandas: a retirar / con envío, cada una en efectivo o transferencia (4 precios)
+// ---- Viandas: el precio sale solo de la modalidad (retira / envío) y la forma de pago (precios editables en Configuración)
 const fh=f=>f===hoy()?'':' ('+f.split('-').reverse().slice(0,2).join('/')+')';
-function vp(x,k){return x[k]??x.precio}
-function camposV(x){return[['A retirar · efectivo ($)','precio'],['A retirar · transferencia ($)','p_retiro_transf'],['Con envío · efectivo ($)','p_envio_efectivo'],['Con envío · transferencia ($)','p_envio_transf']].map(([l,k])=>({l,t:'number',v:x?vp(x,k):''}))}
-function precioTxt(x){return x.categoria==='Viandas'?`<span class="small">Retira ${fm(vp(x,'precio'))} ef. / ${fm(vp(x,'p_retiro_transf'))} transf.<br>Envío ${fm(vp(x,'p_envio_efectivo'))} ef. / ${fm(vp(x,'p_envio_transf'))} transf.</span>`:`<b>${fm(x.precio)}</b>`}
+const calcV=(c,envio,medio,n)=>{const unit=medio==='Transferencia'?c.transferencia:c.efectivo,env=envio?c.envio*Math.min(n,c.envio_max):0;return{unit,envio:env,total:unit*n+env}};
+const notaV=(pc,iN,iM,iP)=>v=>{const n=Math.max(1,+v[iN]||1),r=calcV(pc,v[iM]==='1',v[iP],n);return`Total: <b>${fm(r.total)}</b> <span class="small">(${n} × ${fm(r.unit)}${r.envio?' + envío '+fm(r.envio):''})</span>`};
 async function rVi(){const {pendientes:P,entregadas:E}=await pilo.viandasLista(),tp=m=>fm(P.filter(p=>p.medio===m).reduce((a,p)=>a+p.total,0)),ne=P.filter(p=>p.envio).length;
 $('#vres').textContent=P.length?`Pendientes: ${P.length} (${ne} con envío, ${P.length-ne} a retirar) · a cobrar en efectivo ${tp('Efectivo')} · por transferencia ${tp('Transferencia')}`:'Ordenadas por horario';
-const fila=(p,ent)=>`<div class="row" style="align-items:flex-start"><span><b>${esc(p.horario)}</b>${fh(p.fecha)} · <b>${esc(p.cliente)}</b><span class="tag">${p.envio?'Con envío':'A retirar'}</span><br><span class="small">${p.envio?esc(p.direccion||'Sin dirección'):'Retira en el local'}${p.telefono?' · '+esc(p.telefono):''}</span><br><span class="small">${p.cantidad} × ${esc(p.nombre)} · ${p.medio} · ${fm(p.total)}</span></span>${ent?'<span class="small">Entregada</span>':`<span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="btn" data-e="${p.id}" style="width:auto;padding:8px 12px">Entregada</button><button class="btn s" data-ed="${p.id}" style="width:auto;padding:8px 12px">Modificar</button><button class="btn s" data-q="${p.id}" style="width:auto;padding:8px 12px">Quitar</button></span>`}</div>`;
+const fila=(p,ent)=>`<div class="row" style="align-items:flex-start"><span><b>${esc(p.horario)}</b>${fh(p.fecha)} · <b>${esc(p.cliente)}</b><span class="tag">${p.envio?'Con envío':'A retirar'}</span><br><span class="small">${p.envio?esc(p.direccion||'Sin dirección'):'Retira en el local'}${p.telefono?' · '+esc(p.telefono):''}</span><br><span class="small">${p.cantidad} × ${esc(p.nombre)} · ${p.medio} · <b>${fm(p.total)}</b>${p.envio_monto?' (incluye envío '+fm(p.envio_monto)+')':''}</span></span>${ent?'<span class="small">Entregada</span>':`<span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="btn" data-e="${p.id}" style="width:auto;padding:8px 12px">Entregada</button><button class="btn s" data-ed="${p.id}" style="width:auto;padding:8px 12px">Modificar</button><button class="btn s" data-q="${p.id}" style="width:auto;padding:8px 12px">Quitar</button></span>`}</div>`;
 $('#vh').innerHTML=P.length?P.map(p=>fila(p,0)).join(''):'<p class="small">No hay viandas pendientes. Se cargan desde Ventas → Viandas o con el botón "Nueva vianda".</p>';
 $('#ve').innerHTML=E.length?E.map(p=>fila(p,1)).join(''):'<p class="small">Todavía no se entregó ninguna hoy.</p>';
-$$('#vh [data-e]').forEach(b=>b.onclick=async()=>{if(!confirm('¿Marcar como entregada y cobrada?'))return;try{await pilo.entregarVianda(+b.dataset.e);rVi()}catch(e){err(e)}});
+$$('#vh [data-e]').forEach(b=>b.onclick=async()=>{if(!await confirmar('¿Marcar como entregada y cobrada?','Entregada'))return;try{await pilo.entregarVianda(+b.dataset.e);rVi()}catch(e){err(e)}});
 $$('#vh [data-ed]').forEach(b=>b.onclick=()=>editVi(P.find(x=>x.id==b.dataset.ed)));
-$$('#vh [data-q]').forEach(b=>b.onclick=async()=>{if(!confirm('¿Quitar esta vianda de la lista?'))return;await pilo.quitarVianda(+b.dataset.q);rVi()})}
-async function nuevaVianda(){const cl=await pilo.clientes(),pv=(await pilo.productos()).filter(p=>p.categoria==='Viandas');
-if(!pv.length)return alert('Primero creá una vianda en Configuración → Productos → "Nueva vianda" con sus 4 precios.');
-const r=await ask('Nueva vianda',[{l:'Cliente',opts:[['','— Cliente nuevo —'],...cl.map(c=>[c.id,c.nombre])]},{l:'Nombre (si es cliente nuevo)'},{l:'Teléfono (si es cliente nuevo)'},{l:'Dirección de entrega (vacío = la del cliente)'},{l:'Horario',t:'time',v:'12:00'},{l:'Vianda',opts:pv.map(p=>[p.id,`${p.nombre} — retira ${fm(vp(p,'precio'))}/${fm(vp(p,'p_retiro_transf'))} · envío ${fm(vp(p,'p_envio_efectivo'))}/${fm(vp(p,'p_envio_transf'))} (efectivo/transf.)`])},{l:'Cantidad',t:'number',v:1},{l:'Modalidad',opts:[['0','A retirar'],['1','Con envío']]},{l:'Forma de pago',opts:[['Efectivo','Efectivo'],['Transferencia','Transferencia']]}],'Agregar');
-if(!r)return;const envio=r[7]==='1',dir0=r[3].trim();let id=+r[0]||null;const c0=cl.find(x=>x.id==id);
+$$('#vh [data-q]').forEach(b=>b.onclick=async()=>{if(!await confirmar('¿Quitar esta vianda de la lista?','Quitar'))return;await pilo.quitarVianda(+b.dataset.q);rVi()})}
+async function nuevaVianda(){const cl=await pilo.clientes(),pc=await pilo.preciosViandas();
+const r=await ask('Nueva vianda',[{l:'Cliente',opts:[['','— Cliente nuevo —'],...cl.map(c=>[c.id,c.nombre])]},{l:'Nombre (si es cliente nuevo)'},{l:'Teléfono (si es cliente nuevo)'},{l:'Dirección de entrega (vacío = la del cliente)'},{l:'Horario',t:'time',v:'12:00'},{l:'Cantidad',t:'number',v:1},{l:'Modalidad',opts:[['0','A retirar'],['1','Con envío']]},{l:'Forma de pago',opts:[['Efectivo','Efectivo'],['Transferencia','Transferencia']]}],'Agregar',notaV(pc,5,6,7));
+if(!r)return;const envio=r[6]==='1',dir0=r[3].trim();let id=+r[0]||null;const c0=cl.find(x=>x.id==id);
 if(!id&&!r[1].trim())return alert('Elegí un cliente de la lista o escribí el nombre del nuevo');
 const direccion=dir0||(c0&&c0.direccion)||'';if(envio&&!direccion)return alert('Para un envío hace falta la dirección');
 if(!id)id=await pilo.cliente({nombre:r[1].trim(),telefono:r[2].trim(),direccion:dir0});
-try{await pilo.agregarVianda({cliente_id:id,direccion,horario:r[4]||'12:00',producto_id:+r[5],cantidad:Math.max(1,+r[6]||1),envio,medio:r[8]});go('viandas')}catch(e){err(e)}}
-async function editVi(p){const r=await ask('Modificar vianda · '+p.cliente,[{l:'Horario',t:'time',v:p.horario},{l:'Modalidad',opts:[['0','A retirar'],['1','Con envío']],sel:p.envio?'1':'0'},{l:'Dirección de entrega',v:p.direccion},{l:'Cantidad',t:'number',v:p.cantidad},{l:'Forma de pago',opts:[['Efectivo','Efectivo'],['Transferencia','Transferencia']],sel:p.medio}],'Guardar');
+try{await pilo.agregarVianda({cliente_id:id,direccion,horario:r[4]||'12:00',cantidad:Math.max(1,+r[5]||1),envio,medio:r[7]});go('viandas')}catch(e){err(e)}}
+async function editVi(p){const pc=await pilo.preciosViandas(),r=await ask('Modificar vianda · '+p.cliente,[{l:'Horario',t:'time',v:p.horario},{l:'Modalidad',opts:[['0','A retirar'],['1','Con envío']],sel:p.envio?'1':'0'},{l:'Dirección de entrega',v:p.direccion},{l:'Cantidad',t:'number',v:p.cantidad},{l:'Forma de pago',opts:[['Efectivo','Efectivo'],['Transferencia','Transferencia']],sel:p.medio}],'Guardar',notaV(pc,3,1,4));
 if(!r)return;const envio=r[1]==='1';if(envio&&!r[2].trim())return alert('Para un envío hace falta la dirección');
 try{await pilo.editarVianda(p.id,{horario:r[0]||p.horario,envio,direccion:r[2].trim(),cantidad:Math.max(1,+r[3]||1),medio:r[4]});rVi()}catch(e){err(e)}}
 $('#bnv').onclick=nuevaVianda;
+// ---- Configuración: precios de viandas
+async function pvEjemplo(){const c=await pilo.preciosViandas(),t=(e,m,n)=>fm(calcV(c,e,m,n).total);$('#pvx').textContent=`Con estos precios, 1 vianda: retira y paga en efectivo ${t(0,'Efectivo',1)} · retira y transfiere ${t(0,'Transferencia',1)} · con envío en efectivo ${t(1,'Efectivo',1)} · con envío y transferencia ${t(1,'Transferencia',1)}. Con 3 viandas con envío en efectivo: ${t(1,'Efectivo',3)}.`}
+async function pcargarViandas(){const c=await pilo.preciosViandas();$('#pv1').value=c.efectivo;$('#pv2').value=c.transferencia;$('#pv3').value=c.envio;$('#pv4').value=c.envio_max;pvEjemplo()}
+['vianda_efectivo','vianda_transferencia','vianda_envio','vianda_envio_max'].forEach((k,i)=>{$('#pv'+(i+1)).onchange=async e=>{const v=+e.target.value;if(e.target.value===''||!(v>=0)||(k==='vianda_envio_max'&&v<1)){alert('Poné un número válido');return pcargarViandas()}await pilo.setConfig(k,v);pvEjemplo()}});
 // ---- Productos: editar, eliminar y aumentar precios por porcentaje
-async function editProd(x){const v=x.categoria==='Viandas',r=await ask('Editar producto',v?[{l:'Categoría',v:x.categoria},{l:'Nombre',v:x.nombre},...camposV(x),{l:'Costo ($, opcional)',t:'number',v:x.costo}]:[{l:'Categoría',v:x.categoria},{l:'Nombre',v:x.nombre},{l:'Precio ($)',t:'number',v:x.precio},{l:'Costo ($, opcional)',t:'number',v:x.costo}],'Guardar');
-if(!r)return;const o={id:x.id,categoria:r[0].trim()||x.categoria,nombre:r[1].trim()||x.nombre};
-if(v)Object.assign(o,{precio:+r[2],p_retiro_transf:+r[3],p_envio_efectivo:+r[4],p_envio_transf:+r[5],costo:+r[6]||0});else Object.assign(o,{precio:+r[2],costo:+r[3]||0});
-await pilo.guardarProducto(o);rG()}
-async function aumentarPrecios(){const p=await pilo.productos(),d=$('#dpr'),cats=[...new Set(p.map(x=>x.categoria))];
-$('#pls').innerHTML='<label><input type="checkbox" id="pall"> <b>Todos los productos</b></label>'+cats.map(c=>`<div style="margin-top:8px"><label><input type="checkbox" data-cat="${esc(c)}"> <b>${esc(c)}</b></label>`+p.filter(x=>x.categoria==c).map(x=>`<label style="display:flex;justify-content:space-between;gap:8px;padding-left:22px"><span><input type="checkbox" class="pk" value="${x.id}">${esc(x.nombre)}</span><span class="small">${fm(x.precio)} → <b class="np" data-v="${x.precio}"></b></span></label>`).join('')+'</div>').join('');
-const prev=()=>{const pc=+$('#pp').value||0,rd=+$('#pr').value||1;$$('#pls .np').forEach(e=>e.textContent=fm(Math.max(0,Math.round(+e.dataset.v*(1+pc/100)/rd)*rd)))};prev();$('#pp').oninput=prev;$('#pr').onchange=prev;
-const pk=()=>$$('#pls .pk');$('#pall').onchange=e=>pk().forEach(c=>c.checked=e.target.checked);
+async function editProd(x){const r=await ask('Editar producto',[{l:'Categoría',v:x.categoria},{l:'Nombre',v:x.nombre},{l:'Precio ($)',t:'number',v:x.precio},{l:'Costo ($, opcional)',t:'number',v:x.costo}],'Guardar');
+if(!r)return;await pilo.guardarProducto({id:x.id,categoria:r[0].trim()||x.categoria,nombre:r[1].trim()||x.nombre,precio:+r[2],costo:+r[3]||0});rG()}
+async function aumentarPrecios(){const p=(await pilo.productos()).filter(x=>x.categoria!=='Viandas'),pc=await pilo.preciosViandas(),d=$('#dpr'),cats=[...new Set(p.map(x=>x.categoria))];
+$('#pls').innerHTML=`<label><input type="checkbox" id="pall"> <b>Todo (productos y viandas)</b></label><label style="display:flex;justify-content:space-between;gap:8px;margin-top:8px"><span><input type="checkbox" id="pvia"> <b>🍱 Viandas</b> <span class="small">(efectivo, transferencia y envío)</span></span><span class="small">${fm(pc.efectivo)} → <b class="np" data-v="${pc.efectivo}"></b></span></label>`
++cats.map(c=>`<div style="margin-top:8px"><label><input type="checkbox" data-cat="${esc(c)}"> <b>${esc(c)}</b></label>`+p.filter(x=>x.categoria==c).map(x=>`<label style="display:flex;justify-content:space-between;gap:8px;padding-left:22px"><span><input type="checkbox" class="pk" value="${x.id}">${esc(x.nombre)}</span><span class="small">${fm(x.precio)} → <b class="np" data-v="${x.precio}"></b></span></label>`).join('')+'</div>').join('');
+const prev=()=>{const pt=+$('#pp').value||0,rd=+$('#pr').value||1;$$('#pls .np').forEach(e=>e.textContent=fm(Math.max(0,Math.round(+e.dataset.v*(1+pt/100)/rd)*rd)))};prev();$('#pp').oninput=prev;$('#pr').onchange=prev;
+const pk=()=>$$('#pls .pk');$('#pall').onchange=e=>{pk().forEach(c=>c.checked=e.target.checked);$('#pvia').checked=e.target.checked};
 $$('#pls [data-cat]').forEach(b=>b.onchange=()=>{const ids=p.filter(x=>x.categoria==b.dataset.cat).map(x=>String(x.id));pk().filter(c=>ids.includes(c.value)).forEach(c=>c.checked=b.checked)});
-const validar=()=>{const ids=pk().filter(c=>c.checked).map(c=>+c.value),pc=+$('#pp').value;if(!ids.length||!pc||pc<=-100){alert('Elegí al menos un producto y un porcentaje distinto de 0');return null}return{ids,porcentaje:pc,redondeo:+$('#pr').value||1}};
+const validar=()=>{const ids=pk().filter(c=>c.checked).map(c=>+c.value),viandas=$('#pvia').checked,pt=+$('#pp').value;if((!ids.length&&!viandas)||!pt||pt<=-100){alert('Elegí qué modificar y un porcentaje distinto de 0');return null}return{ids,viandas,porcentaje:pt,redondeo:+$('#pr').value||1}};
 $('#pok').onclick=e=>{if(!validar())e.preventDefault()};
-d.onclose=async()=>{if(d.returnValue!=='ok')return;const v=validar();if(!v)return;if(!confirm(`Se van a modificar ${v.ids.length} producto(s) con ${v.porcentaje>0?'un aumento':'una baja'} de ${Math.abs(v.porcentaje)}%. ¿Continuar?`))return;try{await pilo.ajustarPrecios(v);rG()}catch(x){err(x)}};d.showModal()}
+d.onclose=async()=>{if(d.returnValue!=='ok')return;const v=validar();if(!v)return;if(!await confirmar(`Se van a modificar ${v.ids.length} producto(s)${v.viandas?' y los precios de las viandas':''} con ${v.porcentaje>0?'un aumento':'una baja'} de ${Math.abs(v.porcentaje)}%. ¿Continuar?`,'Aplicar'))return;try{await pilo.ajustarPrecios(v);rG()}catch(x){err(x)}};d.showModal()}
 $('#bpc').onclick=aumentarPrecios;
-$('#bnpv').onclick=async()=>{const r=await ask('Nueva vianda (producto con 4 precios)',[{l:'Nombre',v:'Vianda del día'},...camposV()],'Crear');if(r&&r[0].trim()&&+r[1]>0){await pilo.guardarProducto({categoria:'Viandas',nombre:r[0].trim(),precio:+r[1],p_retiro_transf:+r[2]||+r[1],p_envio_efectivo:+r[3]||+r[1],p_envio_transf:+r[4]||+r[1]});rG()}};
 // ---- Clientes
 async function rCl(){const cl=await pilo.clientes(),q=$('#qcl').value.toLowerCase(),l=cl.filter(c=>[c.nombre,c.telefono,c.direccion,c.observaciones].join(' ').toLowerCase().includes(q));
 $('#cll').innerHTML=l.length?l.map(c=>`<div class="row pl" data-i="${c.id}" style="align-items:flex-start"><span><b>${esc(c.nombre)}</b>${c.telefono?' · '+esc(c.telefono):''}<br><span class="small">${esc(c.direccion||'Sin dirección')}${c.observaciones?' · '+esc(c.observaciones):''}</span></span>${c.deuda>0?`<b style="color:#c26a6a">debe ${fm(c.deuda)}</b>`:''}</div>`).join(''):'<p class="small">No hay clientes para mostrar.</p>';
@@ -152,19 +182,17 @@ const r=await ask('Receta de '+x.nombre,f,'Guardar');if(!r)return;const l=[];for
 $('#bni').onclick=()=>editIns();
 $('#bci').onclick=async()=>{const ins=await pilo.insumos();if(!ins.length)return alert('Primero cargá un insumo');const r=await ask('Registrar compra',[{l:'Insumo',opts:ins.map(i=>[i.id,`${i.nombre} (${i.unidad})`])},{l:'Cantidad comprada',t:'number'},{l:'Total pagado ($)',t:'number'},{l:'Medio de pago',opts:MEDIOS.map(m=>[m,m])}],'Registrar');
 if(r&&+r[1]>0){try{await pilo.comprarInsumo({insumo_id:+r[0],cantidad:+r[1],monto:+r[2]||0,medio:r[3]});rSt()}catch(e){err(e)}}};
-// ---- Mi Negocio (solo administrador): nombre, logo, dirección y teléfono
-let logoTmp='';
+// ---- Mi Negocio (solo administrador): una sola pantalla con datos del negocio, colores, precios, productos y copias de seguridad
 function pintaLogo(el,src){if(src){el.style.background='none';el.innerHTML=`<img src="${src}" alt="">`}else{el.style.background='';el.textContent='☕'}}
-async function miNegocio(){const c=await pilo.config(),d=$('#dneg');logoTmp=c.logo||'';$('#nn').value=c.nombre||'';$('#nd').value=c.direccion||'';$('#nt').value=c.telefono||'';pintaLogo($('#nlogo'),logoTmp);
-d.onclose=async()=>{if(d.returnValue!=='ok')return;const n=$('#nn').value.trim();if(!n)return alert('El nombre del negocio no puede quedar vacío');
-await pilo.setConfig('nombre',n);await pilo.setConfig('direccion',$('#nd').value.trim());await pilo.setConfig('telefono',$('#nt').value.trim());await pilo.setConfig('logo',logoTmp);aplicar(await pilo.config())};d.showModal()}
-$('#bneg').onclick=miNegocio;$('#nok').onclick=e=>{if(!$('#nn').value.trim()){e.preventDefault();alert('El nombre del negocio no puede quedar vacío')}};
-$('#nquit').onclick=()=>{logoTmp='';pintaLogo($('#nlogo'),'')};
-$('#nfile').onchange=e=>{const f=e.target.files[0];e.target.value='';if(!f)return;if(!f.type.startsWith('image/'))return alert('Elegí un archivo de imagen');const img=new Image(),u=URL.createObjectURL(f);
-img.onload=()=>{const k=Math.min(1,256/Math.max(img.width,img.height)),cv=document.createElement('canvas');cv.width=Math.max(1,Math.round(img.width*k));cv.height=Math.max(1,Math.round(img.height*k));cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);logoTmp=cv.toDataURL('image/png');URL.revokeObjectURL(u);pintaLogo($('#nlogo'),logoTmp)};
+function guardaCfg(sel,clave,vacioOk){$(sel).onchange=async e=>{const v=e.target.value.trim();if(!vacioOk&&!v){alert('El nombre del negocio no puede quedar vacío');e.target.value=(await pilo.config())[clave]||'';return}await pilo.setConfig(clave,v);aplicar(await pilo.config())}}
+guardaCfg('#inm','nombre',false);guardaCfg('#idir','direccion',true);guardaCfg('#itel','telefono',true);
+$('#bneg').onclick=()=>go('cfg');
+$('#cquit').onclick=async()=>{await pilo.setConfig('logo','');pintaLogo($('#clogo'),'');aplicar(await pilo.config())};
+$('#cfile').onchange=e=>{const f=e.target.files[0];e.target.value='';if(!f)return;if(!f.type.startsWith('image/'))return alert('Elegí un archivo de imagen');const img=new Image(),u=URL.createObjectURL(f);
+img.onload=async()=>{const k=Math.min(1,256/Math.max(img.width,img.height)),cv=document.createElement('canvas');cv.width=Math.max(1,Math.round(img.width*k));cv.height=Math.max(1,Math.round(img.height*k));cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);const url=cv.toDataURL('image/png');URL.revokeObjectURL(u);await pilo.setConfig('logo',url);pintaLogo($('#clogo'),url);aplicar(await pilo.config())};
 img.onerror=()=>{URL.revokeObjectURL(u);alert('No se pudo leer esa imagen')};img.src=u};
 // ---- Inicio: mosaicos de colores y resumen del día
-const META={ventas:['🛎️','#d9327a','#f0508f'],viandas:['🍱','#e0561f','#c4410e'],clientes:['👥','#1e90d6','#1676b6'],caja:['💵','#e6a22d','#d38a12'],inicio:['📅','#7b4df5','#6238d8'],stats:['📊','#0f9d9a','#0b7f7c'],stock:['📦','#1f9255','#177a44'],cfg:['⚙️','#4f5a82','#3b4468']};
+const META={ventas:['🛎️','#d9327a','#f0508f'],viandas:['🍱','#e0561f','#c4410e'],clientes:['👥','#1e90d6','#1676b6'],caja:['💵','#e6a22d','#d38a12'],inicio:['📅','#7b4df5','#6238d8'],stats:['📊','#0f9d9a','#0b7f7c'],stock:['📦','#1f9255','#177a44'],cfg:['🏪','#4f5a82','#3b4468']};
 Object.entries(META).forEach(([k,[e,c,d]])=>{const h=$(`#${k} .top h1`);if(h){const s=document.createElement('span');s.className='sq';s.style.cssText=`--c:${c};--d:${d}`;s.textContent=e;h.before(s)}});
 function count(root){const red=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;$$(root+' [data-n]').forEach(e=>{const v=+e.dataset.n,p=e.dataset.p||'',t0=performance.now();if(red){e.textContent=p+v.toLocaleString('es-AR');return}const f=t=>{const k=Math.min(1,(t-t0)/800);e.textContent=p+Math.round(v*(1-Math.pow(1-k,3))).toLocaleString('es-AR');if(k<1)requestAnimationFrame(f)};requestAnimationFrame(f)})}
 async function rH(){const hr=new Date().getHours(),c=await pilo.config(),f=new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
@@ -178,4 +206,4 @@ $('#hk').innerHTML=K('Efectivo en caja',ca.esperado,'g','$ ',ca.abierta?'Apertur
 $('#hm').innerHTML=oc.length?oc.map(m=>`<span class="mp o">${esc(m)}</span>`).join(''):'<span class="small">No hay cuentas abiertas</span>';
 $('#hvl').innerHTML=P.length?P.slice(0,3).map(p=>`<div class="row"><span><b>${esc(p.horario)}</b> ${esc(p.cliente)}</span><span class="tag">${p.envio?'Con envío':'A retirar'}</span></div>`).join(''):'<p class="small">No hay viandas pendientes</p>';
 $('#htop').innerHTML=d.top.length?d.top.slice(0,3).map(x=>`<div class="row"><span>${esc(x[0])}</span><b>${x[1]}</b></div>`).join(''):'<p class="small">Todavía no hay ventas hoy</p>';count('#home')}
-(async()=>{const c=await pilo.config();try{ords=JSON.parse(c.cuentas||'{}')}catch{}aplicar(c);rH();if(pilo.backupVencido&&await pilo.backupVencido()&&confirm('Hace más de una semana que no descargás un backup de tus datos. ¿Descargarlo ahora?'))await pilo.exportarBackup()})();
+(async()=>{const c=await pilo.config();try{ords=JSON.parse(c.cuentas||'{}')}catch{}aplicar(c);rH();if(pilo.backupVencido&&await pilo.backupVencido()&&await confirmar('Hace más de una semana que no descargás un backup de tus datos. ¿Descargarlo ahora?','Descargar'))await pilo.exportarBackup()})();

@@ -23,6 +23,6 @@ function html(r) {
 <h2>Gastos por categoría</h2>${tabla(['Categoría', 'Total'], Object.entries(porCat).map(([k, v]) => [esc(k), $(v)]))}
 <h2>Fiados pendientes</h2>${tabla(['Cliente', 'Deuda'], r.deudas.map(d => [esc(d.nombre), $(d.deuda)]))}`;
 }
-return { excel, html };
+return { excel, html, version: '6' };
 })();
 if (typeof module !== 'undefined') module.exports = PiloExport;
