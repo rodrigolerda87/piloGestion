@@ -110,22 +110,59 @@ body{font:600 14px/1.4 Nunito,system-ui,sans-serif}h1,h2,h3,.kpi b,.tot{font-fam
 input[type=number]{border:1px solid var(--ln);background:var(--bg);color:var(--tx);border-radius:10px;padding:8px 10px;font:inherit;width:170px}dialog input[type=number]{width:100%}
 .kbtn{border:0;text-align:left;cursor:pointer;font:inherit;transition:.15s}.kbtn:hover{transform:translateY(-2px)}.kbtn.on{outline:3px solid var(--tx);outline-offset:2px}
 .tb{width:100%;border-collapse:collapse}.tb th,.tb td{padding:9px 10px;text-align:right;border-bottom:1px dashed var(--ln)}.tb th:first-child,.tb td:first-child{text-align:left}.tb th{font-size:12px;color:var(--mut);font-weight:700}.tb tr.tt td{font-weight:800;border-bottom:0;border-top:2px solid var(--ln)}.tb .rojo{color:#d0524a}
+
+/* ===== Ingreso por usuario, salón con mesas, íconos y avisos ===== */
+#login{min-height:calc(100vh - 60px);display:none;place-items:center}#login.on{display:grid}
+.lgb{text-align:center;max-width:520px;width:100%;padding:20px 0}.lgb .logo{width:64px;height:64px;font-size:32px;border-radius:20px;margin:0 auto 10px}.lgb h1{font-size:40px;line-height:1}
+.usrs{display:grid;grid-template-columns:1fr 1fr;gap:12px}.ut{border:0;cursor:pointer;color:#fff;border-radius:24px;padding:26px 14px;background:linear-gradient(145deg,var(--c),var(--d));box-shadow:0 14px 24px -14px var(--c);transition:.2s;display:flex;flex-direction:column;align-items:center;gap:6px;font:inherit}.ut:hover{transform:translateY(-4px)}.ut .ui{font-size:38px}.ut b{font:800 22px 'Baloo 2',sans-serif}
+.ut:focus-visible,.tbl:focus-visible{outline:3px solid var(--tx);outline-offset:2px}
+.pw{display:none;margin-top:16px;gap:10px;align-items:end;justify-content:center;flex-wrap:wrap}.pw.on{display:flex}.pw label{text-align:left;font-size:12px;color:var(--mut)}
+.pw input{display:block;width:100%;margin-top:4px;border:1px solid var(--ln);background:var(--bg);color:var(--tx);border-radius:12px;padding:11px 12px;font:700 15px Nunito,sans-serif}.err{width:100%;color:#e8412b;margin:0;min-height:18px}
+.hint{display:none;background:#2f6bff22;color:var(--tx);border-radius:12px;padding:8px 12px;margin:0 0 10px;font-size:13px}.hint.on{display:block}
+.salon{display:grid;grid-template-columns:1fr 280px;gap:14px}.side{display:flex;flex-direction:column;gap:12px}.side .tile{min-height:132px;flex:1}
+.plano{position:relative;height:470px;border-radius:18px;background:radial-gradient(circle,var(--ln) 1.2px,transparent 1.4px) 0 0/22px 22px;border:1px dashed var(--ln);overflow:hidden;touch-action:none}
+.zona{position:absolute;font:800 11px 'Baloo 2',sans-serif;letter-spacing:.22em;color:var(--mut);opacity:.8;pointer-events:none}
+.tbl{position:absolute;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;cursor:pointer;transition:box-shadow .2s,transform .15s;user-select:none;overflow:hidden}
+.tbl b{font:800 var(--fs,17px)/1.1 'Baloo 2',sans-serif}.tbl small{font-size:calc(var(--fs,17px)*.72);opacity:.95}
+.tbl.libre{background:linear-gradient(145deg,#1f9255,#177a44);box-shadow:0 10px 18px -12px #1f9255}.tbl.oc{background:linear-gradient(145deg,#e0561f,#c4410e);box-shadow:0 10px 18px -12px #e0561f}
+.tbl:not(.mv):hover{transform:translateY(-3px)}.tbl.mv{cursor:grab;outline:2px dashed #6b9bff;outline-offset:3px;touch-action:none;overflow:visible}.tbl.drag{cursor:grabbing;z-index:5;box-shadow:0 20px 30px -10px #000a}
+.rz{position:absolute;right:-7px;bottom:-7px;width:22px;height:22px;border-radius:7px;background:#6b9bff;cursor:nwse-resize;border:2px solid #fff}
+.prod{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start}.prod.mv{cursor:grab;outline:2px dashed #6b9bff;outline-offset:2px}.prod .pi{display:block;font-size:22px;margin-bottom:2px}#ventas.emp #mesas{display:none}
+dialog textarea{display:block;width:100%;margin-top:4px;border:1px solid var(--ln);background:var(--bg);color:var(--tx);border-radius:10px;padding:9px;font:inherit;resize:vertical}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,30px);background:var(--tx);color:var(--bg);padding:10px 18px;border-radius:99px;opacity:0;transition:.3s;pointer-events:none;z-index:50;font-weight:800}.toast.on{opacity:1;transform:translate(-50%,0)}
+@media (max-width:900px){.salon{grid-template-columns:1fr}.side{flex-direction:row;flex-wrap:wrap}.side .tile{min-width:160px}.plano{height:560px}}
+
+/* ===== Íconos dibujados (no dependen de las fuentes de emojis, que en Windows 7 se ven como rectángulos) ===== */
+.sv{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.15em;flex:none}
+.tile .i .sv{width:22px;height:22px}.tile .w .sv{stroke-width:1.1}.ic .sv{width:20px;height:20px}.prod .pi .sv{width:28px;height:28px}.logo .sv{width:60%;height:60%}.ut .ui .sv{width:40px;height:40px}.sq .sv{width:22px;height:22px}
+.pill{align-items:center;gap:6px}body.adm .pill[data-a]{display:inline-flex}
+.prod.mv{cursor:grab;touch-action:none;user-select:none;outline:2px dashed #6b9bff;outline-offset:2px}.prod.dragging{opacity:.3}.prod.over{outline:3px solid #6b9bff;outline-offset:2px}
+.prod.ghost{position:fixed;z-index:60;pointer-events:none;margin:0;opacity:.95;box-shadow:0 20px 30px -10px #0009;transform:rotate(2deg) scale(1.05)}
 </style></head><body>
 <div class="wrap">
-<header class="hdr"><div class="logo" id="lg">☕</div><div class="bnd"><h3 id="nm">Pilo</h3><small id="nsub">Cafetería y comidas</small></div><button class="back" id="back" style="display:none">← Inicio</button><div class="sp"></div>
-<button class="pill" id="bneg" data-a type="button">🏪 Mi Negocio</button><button class="ic" id="tema" type="button" aria-label="Cambiar entre modo claro y oscuro"><span id="tl">🌙</span></button>
-<div class="usr"><div class="av" id="av">U</div><div><div id="ses">Empleado</div><small><span id="lgn" role="button" tabindex="0">Entrar como administrador</span></small></div></div></header>
+<header class="hdr"><div class="logo" id="lg" data-ic="cafe"></div><div class="bnd"><h3 id="nm">Pilo</h3><small id="nsub">Cafetería y comidas</small></div><button class="back" id="back" style="display:none">← Inicio</button><div class="sp"></div>
+<button class="pill" id="bneg" data-a type="button"><span data-ic="tienda"></span> Mi Negocio</button><button class="ic" id="tema" type="button" aria-label="Cambiar entre modo claro y oscuro"><span id="tl" data-ic="luna"></span></button>
+<div class="usr"><div class="av" id="av">U</div><div><div id="ses">Empleado</div><small><span id="lgn" role="button" tabindex="0">Cambiar usuario</span></small></div></div></header>
 <main>
-<section class="tab on" id="home">
+<section class="tab on" id="login"><div class="lgb"><div class="logo" id="llg" data-ic="cafe"></div><h1 id="lnm">Pilo</h1><p class="small" style="margin:6px 0 0">Elegí tu usuario para ingresar</p>
+<div class="usrs" style="margin-top:22px"><button class="ut" id="u-emp" type="button" style="--c:#1e90d6;--d:#1676b6"><span class="ui" data-ic="persona"></span><b>Empleado</b></button><button class="ut" id="u-adm" type="button" style="--c:#7b4df5;--d:#6238d8"><span class="ui" data-ic="candado"></span><b>Administrador</b></button></div>
+<div class="pw" id="pw"><label>Contraseña<input type="password" id="pwi" autocomplete="off"></label><button class="pill" id="pwok" type="button">Entrar</button><p class="err" id="pwe"></p></div></div></section>
+<section class="tab" id="salon"><div class="top"><div><h1>Salón</h1><p id="cajaTxt"></p></div></div>
+<div class="salon"><div class="card"><div class="top" style="margin:0 0 10px"><b>Tocá una mesa para tomar el pedido</b><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn s" id="bplano" type="button" style="display:inline-block;width:auto;padding:8px 12px">Editar mesas</button><button class="btn s" id="breset" type="button" style="display:none;width:auto;padding:8px 12px">Restablecer</button></span></div>
+<div class="hint" id="hplano">Arrastrá cada mesa para moverla y usá el cuadradito azul de la esquina para cambiarle el tamaño. Se guarda sola para tu usuario.</div><div class="plano" id="plano"></div></div>
+<div class="side"><button class="tile" type="button" data-t="viandas" style="--c:#e0561f;--d:#c4410e"><span class="i" data-ic="vianda"></span><span class="w" data-ic="vianda"></span><h3>Viandas</h3><small id="sv2"></small></button>
+<button class="tile" type="button" data-t="clientes" style="--c:#1e90d6;--d:#1676b6"><span class="i" data-ic="persona"></span><span class="w" data-ic="persona"></span><h3>Clientes</h3><small id="sv3"></small></button>
+<button class="tile" type="button" data-t="caja" style="--c:#e6a22d;--d:#d38a12"><span class="i" data-ic="billete"></span><span class="w" data-ic="billete"></span><h3>Caja y gastos</h3><small id="sv4"></small></button></div></div></section>
+<section class="tab" id="home">
 <div class="greet"><div><small id="hfecha"></small><h1 id="hsal"></h1></div><div class="vend" id="hvend" style="display:none"></div></div>
 <div class="tiles">
-<button class="tile big" style="--i:0" data-t="ventas"><span class="i">🛎️</span><span class="w">☕</span><h3>Vender</h3><small id="hv1"></small><span class="go">Nueva venta →</span></button>
-<button class="tile" style="--i:1;--c:#e0561f;--d:#c4410e" data-t="viandas"><span class="i">🍱</span><span class="w">🍱</span><h3>Viandas</h3><small id="hv2"></small></button>
-<button class="tile" style="--i:2;--c:#1e90d6;--d:#1676b6" data-t="clientes"><span class="i">👥</span><span class="w">👥</span><h3>Clientes</h3><small id="hv3"></small></button>
-<button class="tile" style="--i:3;--c:#e6a22d;--d:#d38a12" data-t="caja"><span class="i">💵</span><span class="w">💵</span><h3>Caja y gastos</h3><small>Cuadre del día</small></button>
-<button class="tile" data-a style="--i:4;--c:#1f9255;--d:#177a44" data-t="stock"><span class="i">📦</span><span class="w">📦</span><h3>Stock y recetas</h3><small>Costo y margen</small></button>
-<button class="tile" data-a style="--i:5;--c:#7b4df5;--d:#6238d8" data-t="inicio"><span class="i">📅</span><span class="w">📅</span><h3>Calendario</h3><small>Tocá un día</small></button>
-<button class="tile" data-a style="--i:6;--c:#0f9d9a;--d:#0b7f7c" data-t="stats"><span class="i">📊</span><span class="w">📊</span><h3>Estadísticas</h3><small>Ganancia y medios</small></button>
+<button class="tile big" style="--i:0" data-t="salon"><span class="i" data-ic="campana"></span><span class="w" data-ic="cafe"></span><h3>Vender</h3><small id="hv1"></small><span class="go">Nueva venta →</span></button>
+<button class="tile" style="--i:1;--c:#e0561f;--d:#c4410e" data-t="viandas"><span class="i" data-ic="vianda"></span><span class="w" data-ic="vianda"></span><h3>Viandas</h3><small id="hv2"></small></button>
+<button class="tile" style="--i:2;--c:#1e90d6;--d:#1676b6" data-t="clientes"><span class="i" data-ic="persona"></span><span class="w" data-ic="persona"></span><h3>Clientes</h3><small id="hv3"></small></button>
+<button class="tile" style="--i:3;--c:#e6a22d;--d:#d38a12" data-t="caja"><span class="i" data-ic="billete"></span><span class="w" data-ic="billete"></span><h3>Caja y gastos</h3><small>Cuadre del día</small></button>
+<button class="tile" data-a style="--i:4;--c:#1f9255;--d:#177a44" data-t="stock"><span class="i" data-ic="caja3d"></span><span class="w" data-ic="caja3d"></span><h3>Stock y recetas</h3><small>Costo y margen</small></button>
+<button class="tile" data-a style="--i:5;--c:#7b4df5;--d:#6238d8" data-t="inicio"><span class="i" data-ic="calendario"></span><span class="w" data-ic="calendario"></span><h3>Calendario</h3><small>Tocá un día</small></button>
+<button class="tile" data-a style="--i:6;--c:#0f9d9a;--d:#0b7f7c" data-t="stats"><span class="i" data-ic="grafico"></span><span class="w" data-ic="grafico"></span><h3>Estadísticas</h3><small>Ganancia y medios</small></button>
 </div>
 <div class="kp" id="hk"></div>
 <div class="g3"><div class="card"><h3>Cuentas abiertas <button class="lnk" data-t="ventas">Ver →</button></h3><div class="ms" id="hm"></div></div>
@@ -134,7 +171,7 @@ input[type=number]{border:1px solid var(--ln);background:var(--bg);color:var(--t
 </section>
 
 <section class="tab" id="ventas"><div class="top"><div><h1>Ventas</h1><p>Elegí una mesa o vendé en mostrador</p></div></div>
-<div class="split"><div class="card"><div class="mesas" id="mesas"></div><div class="chips" id="cats"></div><div class="prods" id="prods"></div></div>
+<div class="split"><div class="card"><div class="mesas" id="mesas"></div><div style="display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap"><div class="chips" id="cats"></div><button class="btn s" id="bord" type="button" style="width:auto;padding:8px 12px">Ordenar botones</button></div><div class="hint" id="hord">Arrastrá los botones al lugar que prefieras. Se guarda para tu usuario.</div><div class="prods" id="prods"></div></div>
 <div class="card tk"><h3 id="tt">Mostrador</h3><div class="chips" id="tipos"></div><div id="items" class="tk"></div>
 <div class="small" id="dsc"></div><div class="tot"><span>Total</span><span id="tot">$ 0</span></div>
 <div class="pays"><button class="btn" data-m="Efectivo">Efectivo</button><button class="btn" data-m="Transferencia">Transferencia</button><button class="btn" data-m="QR">QR</button><button class="btn" data-m="Tarjeta">Tarjeta</button></div>
@@ -143,7 +180,7 @@ input[type=number]{border:1px solid var(--ln);background:var(--bg);color:var(--t
 <section class="tab" id="inicio"><div class="top"><div><h1 id="mt"></h1><p>Tocá un día para ver el detalle</p></div><div><button class="btn s" id="bxl" style="display:inline-block;width:auto;padding:10px 14px">Exportar Excel</button> <button class="btn s" id="bpd" style="display:inline-block;width:auto;padding:10px 14px">Exportar PDF</button> <button class="btn s" id="pv" style="display:inline-block;width:40px">‹</button> <button class="btn s" id="nx" style="display:inline-block;width:40px">›</button></div></div>
 <div class="kpis"><div class="kpi" style="background:var(--c1)"><small>Ingresos del mes</small><b id="k1"></b></div><div class="kpi" style="background:var(--c3)"><small>Egresos del mes</small><b id="k2"></b></div><div class="kpi" style="background:var(--c2)"><small>Ganancia del mes</small><b id="k3"></b></div></div>
 <div class="split"><div class="card"><div class="cal" id="cal"></div></div><div class="card" id="det"></div></div></section>
-<section class="tab" id="caja"><div class="top"><div><h1>Caja y gastos</h1><p id="hoyt"></p></div></div><div class="g2"><div class="card" id="cj"></div><div class="card"><h3>Gastos y compras</h3><div id="gl"></div><button class="btn" id="bgas" style="margin-top:12px">Registrar gasto</button></div></div>
+<section class="tab" id="caja"><div class="top"><div><h1>Caja y gastos</h1><p id="hoyt"></p></div></div><div class="g2"><div class="card" id="cj"></div><div class="card"><h3>Gastos de hoy</h3><div id="gl"></div><button class="btn" id="bgas" style="margin-top:12px">Registrar gasto</button></div></div>
 <div class="card" style="margin-top:14px"><h3>Fiados pendientes</h3><div id="dl"></div></div></section>
 <section class="tab" id="stats"><div class="top"><div><h1>Estadísticas</h1><p>Tocá una ganancia para ver su gráfico y la tabla por forma de pago</p></div></div>
 <div class="kpis"><div class="kpi" style="background:var(--c1)"><small>Ventas de hoy</small><b id="s1"></b><small id="s1n"></small></div>
@@ -151,10 +188,12 @@ input[type=number]{border:1px solid var(--ln);background:var(--bg);color:var(--t
 <button class="kpi kbtn" data-p="mes" style="background:var(--c2)"><small>Ganancia mensual</small><b id="s3"></b></button>
 <button class="kpi kbtn" data-p="anio" style="background:var(--c3)"><small>Ganancia anual</small><b id="s4"></b></button></div>
 <div class="card"><div class="top" style="margin:0 0 8px"><h3 id="sptit"></h3><div><button class="btn s" id="spv" style="display:inline-block;width:40px" aria-label="Período anterior">‹</button> <button class="btn s" id="spn" style="display:inline-block;width:40px" aria-label="Período siguiente">›</button></div></div><div id="sgraf"></div></div>
-<div class="card" style="margin-top:14px"><h3>Ganancia por forma de pago</h3><div style="overflow-x:auto" id="stab"></div></div></section>
+<div class="card" style="margin-top:14px"><h3>Ganancia por forma de pago</h3><div style="overflow-x:auto" id="stab"></div></div>
+<div class="card" style="margin-top:14px"><div class="top" style="margin:0 0 10px"><h3>Gastos</h3><div class="chips" style="margin:0"><button class="chip" data-g="dia" type="button">Día</button><button class="chip" data-g="sem" type="button">Semana</button><button class="chip" data-g="mes" type="button">Mes</button><button class="chip" data-g="anio" type="button">Año</button></div></div>
+<div class="top" style="margin:0 0 10px"><b id="gtit"></b><div><button class="btn s" id="gpv" type="button" style="display:inline-block;width:40px" aria-label="Período anterior">‹</button> <button class="btn s" id="gpn" type="button" style="display:inline-block;width:40px" aria-label="Período siguiente">›</button></div></div><div id="gres"></div></div></section>
 <section class="tab" id="cfg"><div class="top"><div><h1>Mi Negocio</h1><p>Datos, colores, precios, productos y copias de seguridad. Los cambios se ven al instante</p></div></div><div class="cfg">
 <div class="card"><h3>Datos del negocio</h3>
-<div class="row"><span>Logo</span><span style="display:flex;gap:8px;align-items:center"><span class="logo" id="clogo" style="width:48px;height:48px;border-radius:14px;font-size:22px">☕</span><label class="btn s" style="display:inline-block;width:auto;padding:8px 12px;cursor:pointer;margin:0">Subir<input type="file" id="cfile" accept="image/*" style="display:none"></label><button type="button" class="btn s" id="cquit" style="display:inline-block;width:auto;padding:8px 12px">Quitar</button></span></div>
+<div class="row"><span>Logo</span><span style="display:flex;gap:8px;align-items:center"><span class="logo" id="clogo" style="width:48px;height:48px;border-radius:14px;font-size:22px" data-ic="cafe"></span><label class="btn s" style="display:inline-block;width:auto;padding:8px 12px;cursor:pointer;margin:0">Subir<input type="file" id="cfile" accept="image/*" style="display:none"></label><button type="button" class="btn s" id="cquit" style="display:inline-block;width:auto;padding:8px 12px">Quitar</button></span></div>
 <div class="row"><span>Nombre del negocio</span><input type="text" id="inm"></div><div class="row"><span>Dirección</span><input type="text" id="idir"></div><div class="row"><span>Teléfono</span><input type="text" id="itel"></div>
 <div class="row"><span>Tu nombre (para el saludo)</span><input type="text" id="inu"></div></div>
 <div class="card" style="grid-column:1/-1;order:1"><h3>Copias y seguridad</h3>
@@ -186,9 +225,10 @@ input[type=number]{border:1px solid var(--ln);background:var(--bg);color:var(--t
 <div class="acts"><button value="ok" id="pok">Aplicar</button><button value="cancel">Cancelar</button></div></form></dialog>
 <dialog id="dlg"><form method="dialog"><h3 id="dt"></h3><div id="df"></div><div class="acts"><button value="ok" id="dok">Aceptar</button><button value="cancel" id="dcan">Cancelar</button></div></form></dialog>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="src/store.js?v=7"></script>
+<script src="src/store.js?v=9"></script>
 <script src="src/export.js?v=6"></script>
-<script src="src/pilo-web.js?v=7"></script>
-<script src="src/app.js?v=8"></script><script>window.addEventListener('load',function(){var bad=[],v=window.PILO_V||{};if(v.app!=='8')bad.push('src/app.js');if(v.web!=='7')bad.push('src/pilo-web.js');if(typeof PiloStore==='undefined'||PiloStore.version!=='7')bad.push('src/store.js');if(typeof PiloExport==='undefined'||PiloExport.version!=='6')bad.push('src/export.js');
+<script src="src/pilo-web.js?v=10"></script>
+<script src="src/app.js?v=10"></script><div class="toast" id="ts"></div>
+<script>window.addEventListener('load',function(){var bad=[],v=window.PILO_V||{};if(v.app!=='10')bad.push('src/app.js');if(v.web!=='10')bad.push('src/pilo-web.js');if(typeof PiloStore==='undefined'||PiloStore.version!=='9')bad.push('src/store.js');if(typeof PiloExport==='undefined'||PiloExport.version!=='6')bad.push('src/export.js');
 if(bad.length){var b=document.createElement('div');b.id='aviso-version';b.style.cssText='background:#e8412b;color:#fff;padding:12px 16px;font:800 14px sans-serif;text-align:center;position:sticky;top:0;z-index:99';b.textContent='Falta actualizar en GitHub: '+bad.join(', ')+'. Subí esos archivos otra vez, cada uno en su carpeta, y recargá con Ctrl+F5.';document.body.prepend(b)}});</script>
 </body></html>
